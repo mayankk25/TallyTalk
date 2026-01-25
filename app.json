@@ -1,0 +1,124 @@
+{
+  "expo": {
+    "name": "TallyTalk",
+    "slug": "voicebudget",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets_home/illustration_icon.png",
+    "scheme": "budgetapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "owner": "mayankk25",
+    "splash": {
+      "image": "./assets_home/illustration.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.voicebudget.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "TallyTalk needs access to your microphone to record voice memos for expense tracking.",
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          }
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets_home/illustration_icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.voicebudget.app",
+      "versionCode": 1,
+      "permissions": [
+        "RECORD_AUDIO",
+        "INTERNET",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets_home/illustration.png"
+    },
+    "plugins": [
+      "expo-router",
+      "@react-native-community/datetimepicker",
+      "@bacons/apple-targets",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets_home/illustration.png",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "QuickRecord",
+              "label": "Quick Record",
+              "description": "Tap to quickly record an expense by voice",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical"
+            }
+          ]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3a91c381-88fd-44b6-a285-132f94244677",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.voicebudget.app.widget",
+                  "targetName": "QuickRecord"
+                },
+                {
+                  "bundleIdentifier": "com.voicebudget.app.widget",
+                  "targetName": "QuickRecord"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "router": {}
+    },
+    "updates": {
+      "url": "https://u.expo.dev/",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}

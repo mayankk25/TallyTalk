@@ -1,0 +1,60 @@
+{
+  "appName": "VoiceBudget",
+  "subtitle": "Voice-Powered Expense Tracker",
+
+  "shortDescription": "Track expenses by voice. Just speak and VoiceBudget automatically categorizes and logs your spending.",
+
+  "fullDescription": "VoiceBudget makes expense tracking effortless. Simply speak your expenses and our AI automatically categorizes and records them for you.\n\n**How it works:**\n1. Tap the mic button\n2. Say something like \"Spent $45 on groceries\" or \"Coffee $5.50\"\n3. VoiceBudget automatically extracts the amount, category, and description\n4. Review and save - done!\n\n**Key Features:**\n\n• Voice Input - Just speak your expenses naturally\n• AI-Powered - Automatic categorization and parsing\n• Quick Widget - One-tap recording from your home screen\n• Analytics - Visualize spending by category and time\n• Multiple Views - Daily, monthly, and category breakdowns\n• Clean Design - Minimalist, distraction-free interface\n\n**Categories include:**\nFood & Dining, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Education, and more.\n\n**Privacy First:**\nYour financial data stays private. Voice recordings are processed securely and not stored after parsing.\n\nPerfect for:\n- Busy professionals who hate manual data entry\n- Anyone who wants to understand their spending habits\n- People who always forget to log expenses\n\nStart tracking your expenses the easy way. Download VoiceBudget today!",
+
+  "keywords": [
+    "expense tracker",
+    "voice expense",
+    "budget app",
+    "spending tracker",
+    "money manager",
+    "finance",
+    "voice memo",
+    "expense log",
+    "budget tracker",
+    "personal finance"
+  ],
+
+  "categories": {
+    "ios": {
+      "primary": "Finance",
+      "secondary": "Productivity"
+    },
+    "android": {
+      "primary": "Finance",
+      "secondary": "Productivity"
+    }
+  },
+
+  "ageRating": "4+",
+
+  "pricing": "Free",
+
+  "supportUrl": "https://voicebudget.app/support",
+  "privacyPolicyUrl": "https://voicebudget.app/privacy",
+  "marketingUrl": "https://voicebudget.app",
+
+  "releaseNotes": {
+    "1.0.0": "Initial release of VoiceBudget!\n\n• Voice-powered expense tracking\n• AI-driven automatic categorization\n• Home screen widget for quick recording\n• Analytics dashboard with category and time breakdowns\n• Clean, minimalist design"
+  },
+
+  "screenshots": {
+    "required": [
+      "Home screen with expense list",
+      "Voice recording screen",
+      "Analytics dashboard",
+      "Category breakdown",
+      "Quick record widget"
+    ],
+    "sizes": {
+      "iphone_6_7": "1290x2796",
+      "iphone_6_5": "1284x2778",
+      "ipad_pro_12_9": "2048x2732",
+      "android_phone": "1080x1920"
+    }
+  }
+}
