@@ -27,7 +27,7 @@ export function QuickRecordWidget() {
       }}
       clickAction="OPEN_URI"
       clickActionData={{
-        uri: 'budgetapp://open-recorder',
+        uri: 'budgetapp://record',
       }}
     >
       {/* Mic Icon Circle */}

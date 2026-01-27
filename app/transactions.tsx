@@ -13,6 +13,7 @@ import { Text, View } from '@/components/Themed';
 import EditExpenseModal from '@/components/EditExpenseModal';
 import { getExpenses, deleteExpense } from '@/lib/api';
 import { Expense } from '@/types';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -22,14 +23,6 @@ const MONTHS = [
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-// Format number with commas
-const formatCurrency = (amount: number, decimals: number = 2): string => {
-  return amount.toLocaleString('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-};
 
 type ViewMode = 'list' | 'daily';
 
@@ -42,6 +35,7 @@ interface DailySection {
 
 export default function TransactionsScreen() {
   const router = useRouter();
+  const { currency, formatCurrency, formatAmount } = useCurrency();
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -248,7 +242,7 @@ export default function TransactionsScreen() {
           styles.transactionAmount,
           item.type === 'income' && styles.incomeAmount
         ]}>
-          {item.type === 'income' ? '+' : '-'}${formatCurrency(item.amount)}
+          {item.type === 'income' ? '+' : '-'}{currency.symbol}{formatAmount(item.amount)}
         </Text>
       </TouchableOpacity>
     </Swipeable>
@@ -278,7 +272,7 @@ export default function TransactionsScreen() {
           styles.transactionAmount,
           item.type === 'income' && styles.incomeAmount
         ]}>
-          {item.type === 'income' ? '+' : '-'}${formatCurrency(item.amount)}
+          {item.type === 'income' ? '+' : '-'}{currency.symbol}{formatAmount(item.amount)}
         </Text>
       </TouchableOpacity>
     </Swipeable>
@@ -289,10 +283,10 @@ export default function TransactionsScreen() {
       <Text style={styles.sectionTitle}>{formatDayHeader(section.date)}</Text>
       <View style={styles.sectionTotals}>
         {section.dayTotal.income > 0 && (
-          <Text style={styles.sectionIncome}>+${formatCurrency(section.dayTotal.income, 0)}</Text>
+          <Text style={styles.sectionIncome}>+{currency.symbol}{formatAmount(section.dayTotal.income, 0)}</Text>
         )}
         {section.dayTotal.expense > 0 && (
-          <Text style={styles.sectionExpense}>-${formatCurrency(section.dayTotal.expense, 0)}</Text>
+          <Text style={styles.sectionExpense}>-{currency.symbol}{formatAmount(section.dayTotal.expense, 0)}</Text>
         )}
       </View>
     </View>
@@ -347,14 +341,14 @@ export default function TransactionsScreen() {
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Income</Text>
             <Text style={[styles.summaryValue, styles.incomeValue]}>
-              +${formatCurrency(totals.income)}
+              +{currency.symbol}{formatAmount(totals.income)}
             </Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Expenses</Text>
             <Text style={[styles.summaryValue, styles.expenseValue]}>
-              -${formatCurrency(totals.expenses)}
+              -{currency.symbol}{formatAmount(totals.expenses)}
             </Text>
           </View>
           <View style={styles.summaryDivider} />
@@ -364,7 +358,7 @@ export default function TransactionsScreen() {
               styles.summaryValue,
               totals.balance >= 0 ? styles.incomeValue : styles.expenseValue
             ]}>
-              ${formatCurrency(totals.balance)}
+              {currency.symbol}{formatAmount(totals.balance)}
             </Text>
           </View>
         </View>

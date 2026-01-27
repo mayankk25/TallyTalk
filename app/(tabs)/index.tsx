@@ -17,7 +17,7 @@ import EditExpenseModal from '@/components/EditExpenseModal';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import ExpenseReview from '@/components/ExpenseReview';
 import OnboardingModal from '@/components/OnboardingModal';
-import { hasCompletedOnboarding, setOnboardingComplete } from '@/lib/storage';
+import { hasCompletedOnboarding, setOnboardingComplete, getVoiceLanguage } from '@/lib/storage';
 import {
   getExpenses,
   deleteExpense,
@@ -30,16 +30,9 @@ import { Expense, ParsedExpense } from '@/types';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useDeepLink } from '../_layout';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const { width } = Dimensions.get('window');
-
-// Format number with commas
-const formatCurrency = (amount: number, decimals: number = 0): string => {
-  return amount.toLocaleString('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-};
 
 interface DaySection {
   title: string;
@@ -51,6 +44,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ openRecorder?: string }>();
   const { shouldOpenRecorder, clearRecorderFlag } = useDeepLink();
+  const { currency, formatCurrency, formatAmount, refresh: refreshCurrency } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<MonthlySummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -138,6 +132,8 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
+      refreshCurrency();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
@@ -212,7 +208,8 @@ export default function HomeScreen() {
   const handleRecordingComplete = async (uri: string) => {
     setIsProcessing(true);
     try {
-      const result = await parseVoiceExpenses(uri);
+      const language = await getVoiceLanguage();
+      const result = await parseVoiceExpenses(uri, language);
       setParsedExpenses(result.expenses);
       setTranscript(result.transcript);
       setVoiceScreen('review');
@@ -316,7 +313,7 @@ export default function HomeScreen() {
             styles.transactionAmount,
             item.type === 'income' && styles.incomeAmount
           ]}>
-            {item.type === 'income' ? '+' : '-'}${formatCurrency(item.amount, 2)}
+            {item.type === 'income' ? '+' : '-'}{currency.symbol}{formatAmount(item.amount)}
           </Text>
         </TouchableOpacity>
       </Swipeable>
@@ -348,7 +345,7 @@ export default function HomeScreen() {
           styles.balanceAmount,
           (summary?.balance || 0) < 0 && styles.negativeBalance
         ]}>
-          ${formatCurrency(Math.abs(summary?.balance || 0), 2)}
+          {formatCurrency(Math.abs(summary?.balance || 0))}
         </Text>
         {(summary?.balance || 0) < 0 && (
           <Text style={styles.balanceNote}>over budget</Text>
@@ -360,7 +357,7 @@ export default function HomeScreen() {
             <View style={styles.statContent}>
               <Text style={styles.statLabel}>Income</Text>
               <Text style={styles.statValue}>
-                ${formatCurrency(summary?.totalIncome || 0)}
+                {formatCurrency(summary?.totalIncome || 0, 0)}
               </Text>
             </View>
           </View>
@@ -370,7 +367,7 @@ export default function HomeScreen() {
             <View style={styles.statContent}>
               <Text style={styles.statLabel}>Spent</Text>
               <Text style={styles.statValue}>
-                ${formatCurrency(summary?.totalExpenses || 0)}
+                {formatCurrency(summary?.totalExpenses || 0, 0)}
               </Text>
             </View>
           </View>
@@ -445,48 +442,50 @@ export default function HomeScreen() {
         <FontAwesome name="microphone" size={24} color="#fff" />
       </TouchableOpacity>
 
-      {/* Voice Recording Modal */}
-      <Modal
-        visible={showVoiceModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={resetVoiceModal}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHandle} />
+      {/* Voice Recording Modal - only render content when visible to prevent auto-start */}
+      {showVoiceModal && (
+        <Modal
+          visible={showVoiceModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={resetVoiceModal}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHandle} />
 
-          <TouchableOpacity
-            style={styles.modalCloseButton}
-            onPress={resetVoiceModal}
-          >
-            <FontAwesome name="times" size={20} color="#8E8E93" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={resetVoiceModal}
+            >
+              <FontAwesome name="times" size={20} color="#8E8E93" />
+            </TouchableOpacity>
 
-          {voiceScreen === 'record' ? (
-            <View style={styles.voiceContainer}>
-              <Text style={styles.voiceTitle}>Add Transaction</Text>
-              <Text style={styles.voiceSubtitle}>
-                Say something like "Spent $20 on lunch" or "Received $500 salary"
-              </Text>
-              <View style={styles.recorderWrapper}>
-                <VoiceRecorder
-                  onRecordingComplete={handleRecordingComplete}
-                  isProcessing={isProcessing}
-                  autoStart={true}
-                />
+            {voiceScreen === 'record' ? (
+              <View style={styles.voiceContainer}>
+                <Text style={styles.voiceTitle}>Add Transaction</Text>
+                <Text style={styles.voiceSubtitle}>
+                  Say something like "Spent $20 on lunch" or "Received $500 salary"
+                </Text>
+                <View style={styles.recorderWrapper}>
+                  <VoiceRecorder
+                    onRecordingComplete={handleRecordingComplete}
+                    isProcessing={isProcessing}
+                    autoStart={true}
+                  />
+                </View>
               </View>
-            </View>
-          ) : (
-            <ExpenseReview
-              expenses={parsedExpenses}
-              transcript={transcript}
-              onConfirm={handleVoiceConfirm}
-              onCancel={resetVoiceModal}
-              isLoading={isSaving}
-            />
-          )}
-        </View>
-      </Modal>
+            ) : (
+              <ExpenseReview
+                expenses={parsedExpenses}
+                transcript={transcript}
+                onConfirm={handleVoiceConfirm}
+                onCancel={resetVoiceModal}
+                isLoading={isSaving}
+              />
+            )}
+          </View>
+        </Modal>
+      )}
 
       {/* Edit Modal */}
       <EditExpenseModal

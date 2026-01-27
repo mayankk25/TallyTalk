@@ -10,6 +10,7 @@ import {
 import { Text, View } from './Themed';
 import { ParsedExpense, Category, TransactionType } from '@/types';
 import { getCategories } from '@/lib/api';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +29,7 @@ export default function ExpenseReview({
   onCancel,
   isLoading = false,
 }: ExpenseReviewProps) {
+  const { currency } = useCurrency();
   const [expenses, setExpenses] = useState<ParsedExpense[]>(initialExpenses);
   const [expenseCategories, setExpenseCategories] = useState<Category[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<Category[]>([]);
@@ -129,7 +131,7 @@ export default function ExpenseReview({
             <View style={styles.inputRow}>
               <Text style={styles.label}>Amount</Text>
               <View style={styles.amountRow}>
-                <Text style={styles.currencySymbol}>$</Text>
+                <Text style={styles.currencySymbol}>{currency.symbol}</Text>
                 <TextInput
                   style={styles.amountInput}
                   value={expense.amount.toString()}

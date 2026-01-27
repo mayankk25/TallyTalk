@@ -99,13 +99,6 @@ function RootLayoutNav() {
             animation: 'fade',
           }}
         />
-        <Stack.Screen
-          name="open-recorder"
-          options={{
-            headerShown: false,
-            animation: 'none',
-          }}
-        />
       </Stack>
     </ThemeProvider>
   );
@@ -130,35 +123,9 @@ export default function RootLayout() {
     setInitialDeepLink(null);
   }, []);
 
-  // Handle deep links
-  useEffect(() => {
-    // Handle URL when app is opened from deep link
-    const handleDeepLink = (event: { url: string }) => {
-      const { path } = Linking.parse(event.url);
-      if (path === 'open-recorder') {
-        // Set flag to open recorder modal in home screen
-        setShouldOpenRecorder(true);
-      }
-    };
-
-    // Check if app was opened with a URL
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        const { path } = Linking.parse(url);
-        if (path === 'open-recorder') {
-          // Set flag to open recorder modal in home screen
-          setShouldOpenRecorder(true);
-        }
-      }
-    });
-
-    // Listen for URL events while app is running
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
+  // Deep links are now handled automatically by expo-router
+  // The 'record' deep link navigates to app/record.tsx automatically
+  // No custom handling needed since file name matches the deep link path
 
   useEffect(() => {
     if (error) throw error;

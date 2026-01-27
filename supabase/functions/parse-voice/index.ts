@@ -14,7 +14,7 @@ interface ParsedTransaction {
   type: "expense" | "income";
 }
 
-async function transcribeAudio(audioBase64: string): Promise<string> {
+async function transcribeAudio(audioBase64: string, language: string = "en"): Promise<string> {
   const binaryStr = atob(audioBase64);
   const bytes = new Uint8Array(binaryStr.length);
   for (let i = 0; i < binaryStr.length; i++) {
@@ -22,14 +22,28 @@ async function transcribeAudio(audioBase64: string): Promise<string> {
   }
 
   console.log("Audio bytes length:", bytes.length);
+  console.log("Voice language:", language);
 
   const formData = new FormData();
   const blob = new Blob([bytes], { type: "audio/mp4" });
   formData.append("file", blob, "recording.m4a");
   formData.append("model", "whisper-1");
-  formData.append("task", "translate"); // Always translate any language to English
 
-  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+  // Use translations endpoint for non-English (auto-detects source, outputs English)
+  // Use transcriptions endpoint for English (with language hint for accent handling)
+  const useTranslation = language !== "en";
+  const endpoint = useTranslation
+    ? "https://api.openai.com/v1/audio/translations"
+    : "https://api.openai.com/v1/audio/transcriptions";
+
+  // Only add language param for transcriptions endpoint (helps with accents)
+  if (!useTranslation) {
+    formData.append("language", language);
+  }
+
+  console.log("Using endpoint:", endpoint, "language:", language);
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${OPENAI_API_KEY}`,
@@ -133,7 +147,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { audio } = body;
+    const { audio, language = "en" } = body;
 
     if (!audio) {
       return new Response(
@@ -143,9 +157,10 @@ serve(async (req) => {
     }
 
     console.log("Received audio base64 length:", audio.length);
+    console.log("Requested language:", language);
 
-    // Transcribe with Whisper
-    const transcript = await transcribeAudio(audio);
+    // Transcribe with Whisper using specified language
+    const transcript = await transcribeAudio(audio, language);
     console.log("Transcript:", transcript);
 
     if (!transcript || transcript.trim() === "") {

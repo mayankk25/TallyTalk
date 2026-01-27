@@ -10,6 +10,7 @@ import { Text, View } from '@/components/Themed';
 import { getExpenses } from '@/lib/api';
 import { Expense } from '@/types';
 import { useFocusEffect } from '@react-navigation/native';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const { width } = Dimensions.get('window');
 // Content padding (20) + card padding (20) on each side = 80 total
@@ -22,14 +23,6 @@ const CATEGORY_COLORS = [
   '#FF9F40', '#FF6384', '#C9CBCF', '#7BC225', '#E8175D',
 ];
 
-// Format number with commas
-const formatCurrency = (amount: number, decimals: number = 0): string => {
-  return amount.toLocaleString('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-};
-
 type SpendingViewType = 'monthly' | 'daily';
 
 interface SelectedDay {
@@ -38,6 +31,7 @@ interface SelectedDay {
 }
 
 export default function AnalyticsScreen() {
+  const { currency, formatCurrency, refresh: refreshCurrency } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [spendingView, setSpendingView] = useState<SpendingViewType>('monthly');
@@ -46,6 +40,8 @@ export default function AnalyticsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadExpenses();
+      refreshCurrency();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
@@ -176,11 +172,11 @@ export default function AnalyticsScreen() {
       <View style={styles.summaryRow}>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Spent this month</Text>
-          <Text style={styles.summaryValue}>${formatCurrency(totalSpentThisMonth)}</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(totalSpentThisMonth)}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Daily average</Text>
-          <Text style={styles.summaryValue}>${formatCurrency(avgDailySpend)}</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(avgDailySpend)}</Text>
         </View>
       </View>
 
@@ -192,7 +188,7 @@ export default function AnalyticsScreen() {
             <View>
               <Text style={styles.incomeExpenseLabel}>Income</Text>
               <Text style={[styles.incomeExpenseValue, styles.incomeText]}>
-                +${formatCurrency(totalIncomeThisMonth)}
+                +{formatCurrency(totalIncomeThisMonth)}
               </Text>
             </View>
           </View>
@@ -201,7 +197,7 @@ export default function AnalyticsScreen() {
             <View>
               <Text style={styles.incomeExpenseLabel}>Expenses</Text>
               <Text style={[styles.incomeExpenseValue, styles.expenseText]}>
-                -${formatCurrency(totalSpentThisMonth)}
+                -{formatCurrency(totalSpentThisMonth)}
               </Text>
             </View>
           </View>
@@ -310,7 +306,7 @@ export default function AnalyticsScreen() {
                       {MONTHS_SHORT[now.getMonth()]} {selectedDay.day}
                     </Text>
                     <Text style={styles.selectedDayAmount}>
-                      ${formatCurrency(selectedDay.amount)}
+                      {formatCurrency(selectedDay.amount)}
                     </Text>
                   </View>
                 )}
@@ -355,7 +351,7 @@ export default function AnalyticsScreen() {
               innerCircleColor="#fff"
               centerLabelComponent={() => (
                 <View style={styles.pieCenter}>
-                  <Text style={styles.pieCenterAmount}>${formatCurrency(totalSpentThisMonth)}</Text>
+                  <Text style={styles.pieCenterAmount}>{formatCurrency(totalSpentThisMonth)}</Text>
                   <Text style={styles.pieCenterLabel}>Total</Text>
                 </View>
               )}
@@ -367,7 +363,7 @@ export default function AnalyticsScreen() {
                   <Text style={styles.legendText} numberOfLines={1}>
                     {item.text}
                   </Text>
-                  <Text style={styles.legendValue}>${formatCurrency(item.value)}</Text>
+                  <Text style={styles.legendValue}>{formatCurrency(item.value)}</Text>
                 </View>
               ))}
             </View>
@@ -394,7 +390,7 @@ export default function AnalyticsScreen() {
                   <View style={styles.topCategoryInfo}>
                     <View style={styles.topCategoryHeader}>
                       <Text style={styles.topCategoryName}>{name}</Text>
-                      <Text style={styles.topCategoryAmount}>${formatCurrency(amount)}</Text>
+                      <Text style={styles.topCategoryAmount}>{formatCurrency(amount)}</Text>
                     </View>
                     <View style={styles.topCategoryBarBg}>
                       <View

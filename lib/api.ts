@@ -12,8 +12,9 @@ interface ParseVoiceResponse {
   transcript: string;
 }
 
-export async function parseVoiceExpenses(audioUri: string): Promise<ParseVoiceResponse> {
+export async function parseVoiceExpenses(audioUri: string, language: string = 'en'): Promise<ParseVoiceResponse> {
   console.log('Reading audio file from:', audioUri);
+  console.log('Voice language:', language);
 
   // Fetch the audio file and convert to base64
   const response = await fetch(audioUri);
@@ -50,7 +51,7 @@ export async function parseVoiceExpenses(audioUri: string): Promise<ParseVoiceRe
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${supabaseKey}`,
     },
-    body: JSON.stringify({ audio: base64Audio }),
+    body: JSON.stringify({ audio: base64Audio, language }),
   });
 
   const data = await funcResponse.json();
