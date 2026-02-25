@@ -214,7 +214,7 @@ export default function SettingsScreen() {
           <MenuItem
             icon="shield"
             label="Privacy Policy"
-            onPress={() => Linking.openURL('https://www.notion.so/Privacy-Policy-2efdf2a1445480a28da3df99559f86a2')}
+            onPress={() => Linking.openURL('https://mayankk25.github.io/TallyTalk/privacy-policy.html')}
           />
         </View>
       </View>
