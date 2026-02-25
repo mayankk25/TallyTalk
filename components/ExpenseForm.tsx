@@ -12,6 +12,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Text, View } from './Themed';
 import { Category, Expense, TransactionType } from '@/types';
 import { getCategories } from '@/lib/api';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -36,6 +37,7 @@ export default function ExpenseForm({
   onDelete,
   isLoading = false,
 }: ExpenseFormProps) {
+  const { currency } = useCurrency();
   const [type, setType] = useState<TransactionType>(expense?.type || defaultType);
   const [amount, setAmount] = useState(expense?.amount?.toString() || '');
   const [description, setDescription] = useState(expense?.description || '');
@@ -109,14 +111,6 @@ export default function ExpenseForm({
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Handle bar */}
-      <View style={styles.handleBar} />
-
-      {/* Close button */}
-      <TouchableOpacity style={styles.closeButton} onPress={onCancel}>
-        <Text style={styles.closeButtonText}>Cancel</Text>
-      </TouchableOpacity>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -157,7 +151,7 @@ export default function ExpenseForm({
 
         {/* Amount Input */}
         <View style={styles.amountContainer}>
-          <Text style={styles.currencySymbol}>$</Text>
+          <Text style={styles.currencySymbol}>{currency.symbol}</Text>
           <TextInput
             style={[
               styles.amountInput,
@@ -238,16 +232,28 @@ export default function ExpenseForm({
         </View>
 
         {showDatePicker && (
-          <DateTimePicker
-            value={expenseDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(event, date) => {
-              setShowDatePicker(Platform.OS === 'ios');
-              if (date) setExpenseDate(date);
-            }}
-            maximumDate={new Date()}
-          />
+          <View>
+            <DateTimePicker
+              value={expenseDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, date) => {
+                if (Platform.OS !== 'ios') {
+                  setShowDatePicker(false);
+                }
+                if (date) setExpenseDate(date);
+              }}
+              maximumDate={new Date()}
+            />
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity
+                style={styles.datePickerDone}
+                onPress={() => setShowDatePicker(false)}
+              >
+                <Text style={styles.datePickerDoneText}>Done</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </ScrollView>
 
@@ -294,32 +300,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  handleBar: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E5E5E5',
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 16,
-    left: 20,
-    zIndex: 1,
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 48,
+    paddingTop: 16,
     paddingBottom: 24,
   },
 
@@ -407,6 +393,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#000',
+  },
+  datePickerDone: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  datePickerDoneText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   fieldButtonPlaceholder: {
     color: '#C7C7CC',

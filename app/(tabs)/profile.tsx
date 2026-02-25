@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, Alert, ScrollView, ActionSheetIOS, Platform, Modal } from 'react-native';
+import { StyleSheet, TouchableOpacity, Alert, ScrollView, ActionSheetIOS, Platform, Modal, Linking } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Text, View } from '@/components/Themed';
 import { useAuthContext } from '@/lib/AuthContext';
@@ -16,7 +16,8 @@ import {
 } from '@/lib/storage';
 
 export default function SettingsScreen() {
-  const { user, signOut } = useAuthContext();
+  const { user, signOut, deleteAccount } = useAuthContext();
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [voiceLanguage, setVoiceLanguageState] = useState<VoiceLanguage>('en');
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const [currencyCode, setCurrencyCodeState] = useState<CurrencyCode>('USD');
@@ -120,6 +121,43 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation
+            Alert.alert(
+              'Are you absolutely sure?',
+              'All your transactions, categories, and account data will be permanently deleted.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete Everything',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setIsDeletingAccount(true);
+                    try {
+                      await deleteAccount();
+                    } catch (error: any) {
+                      setIsDeletingAccount(false);
+                      Alert.alert('Error', error.message || 'Failed to delete account. Please try again.');
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   const getInitials = () => {
     if (!user?.email) return '?';
     return user.email.charAt(0).toUpperCase();
@@ -137,34 +175,9 @@ export default function SettingsScreen() {
           <Text style={styles.avatarText}>{getInitials()}</Text>
         </View>
         <Text style={styles.email}>{user?.email}</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>Free Plan</Text>
-        </View>
       </View>
 
-      {/* Account Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <View style={styles.menuCard}>
-          <MenuItem
-            icon="user-o"
-            label="Edit Profile"
-            onPress={() => Alert.alert('Coming Soon', 'Profile editing will be available soon')}
-          />
-          <View style={styles.menuDivider} />
-          <MenuItem
-            icon="tags"
-            label="Categories"
-            onPress={() => Alert.alert('Coming Soon', 'Category management will be available soon')}
-          />
-          <View style={styles.menuDivider} />
-          <MenuItem
-            icon="bell-o"
-            label="Notifications"
-            onPress={() => Alert.alert('Coming Soon', 'Notification settings will be available soon')}
-          />
-        </View>
-      </View>
+      {/* Account Section - removed Edit Profile, Categories, Notifications (not yet implemented) */}
 
       {/* Preferences Section */}
       <View style={styles.section}>
@@ -183,13 +196,7 @@ export default function SettingsScreen() {
             value={getCurrencyDisplay()}
             onPress={handleCurrencyPress}
           />
-          <View style={styles.menuDivider} />
-          <MenuItem
-            icon="moon-o"
-            label="Appearance"
-            value="Light"
-            onPress={() => Alert.alert('Coming Soon', 'Dark mode will be available soon')}
-          />
+          {/* Appearance removed - not yet implemented */}
         </View>
       </View>
 
@@ -207,13 +214,7 @@ export default function SettingsScreen() {
           <MenuItem
             icon="shield"
             label="Privacy Policy"
-            onPress={() => Alert.alert('Coming Soon', 'Privacy policy will be available soon')}
-          />
-          <View style={styles.menuDivider} />
-          <MenuItem
-            icon="file-text-o"
-            label="Terms of Service"
-            onPress={() => Alert.alert('Coming Soon', 'Terms of service will be available soon')}
+            onPress={() => Linking.openURL('https://www.notion.so/Privacy-Policy-2efdf2a1445480a28da3df99559f86a2')}
           />
         </View>
       </View>
@@ -228,7 +229,20 @@ export default function SettingsScreen() {
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
-      <Text style={styles.footerText}>Made with care</Text>
+      {/* Delete Account Button */}
+      <TouchableOpacity
+        style={styles.deleteAccountButton}
+        onPress={handleDeleteAccount}
+        activeOpacity={0.8}
+        disabled={isDeletingAccount}
+      >
+        <FontAwesome name="trash-o" size={18} color="#FF3B30" />
+        <Text style={styles.deleteAccountText}>
+          {isDeletingAccount ? 'Deleting Account...' : 'Delete Account'}
+        </Text>
+      </TouchableOpacity>
+
+      <Text style={styles.footerText}>Made with ❤️ by Uncommon Labs</Text>
 
       {/* Language Picker Modal for Android */}
       <Modal
@@ -404,17 +418,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     marginBottom: 12,
   },
-  badge: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
 
   // Sections
   section: {
@@ -495,6 +498,22 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     fontSize: 16,
     fontWeight: '600',
+  },
+
+  // Delete Account
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 16,
+    borderRadius: 16,
+    marginTop: 12,
+  },
+  deleteAccountText: {
+    color: '#FF3B30',
+    fontSize: 14,
+    fontWeight: '500',
   },
 
   // Footer

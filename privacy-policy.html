@@ -3,76 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TallyTalk Privacy Policy</title>
+    <title>Privacy Policy - TallyTalk</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333; }
-        h1 { color: #1a1a2e; }
-        h2 { color: #4a4a6a; margin-top: 30px; }
-        p { margin: 10px 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.7; color: #333; }
+        h1 { color: #1a1a2e; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #4a4a6a; margin-top: 32px; }
+        h3 { color: #555; margin-top: 20px; }
+        p, li { margin: 8px 0; }
+        ul { padding-left: 24px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: left; }
+        th { background-color: #f5f5f5; font-weight: 600; }
         .last-updated { color: #666; font-style: italic; }
+        .highlight { background: #f9f9f9; border-left: 3px solid #4a4a6a; padding: 12px 16px; margin: 16px 0; }
     </style>
 </head>
 <body>
-    <h1>TallyTalk Privacy Policy</h1>
-    <p class="last-updated">Last updated: January 21, 2026</p>
+    <h1>Privacy Policy</h1>
+    <p class="last-updated">Last updated: February 25, 2026</p>
 
-    <h2>Introduction</h2>
-    <p>TallyTalk ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our mobile application.</p>
+    <p>This privacy policy describes how Mayank Agrawal ("we", "us", or "our"), the developer of <strong>TallyTalk</strong>, collects, uses, stores, shares, and protects your personal information when you use our mobile application. TallyTalk is a voice-based expense tracking app available on iOS and Android.</p>
 
-    <h2>Information We Collect</h2>
-    <p><strong>Voice Recordings:</strong> TallyTalk uses your device's microphone to record voice memos for expense tracking. These recordings are processed to extract expense information and are not stored permanently unless you choose to save them.</p>
-    <p><strong>Account Information:</strong> If you create an account, we collect your email address and authentication credentials to provide you with a personalized experience.</p>
-    <p><strong>Financial Data:</strong> The expense and income data you enter (amounts, categories, descriptions) is stored securely to provide the app's core functionality.</p>
+    <p>By using TallyTalk, you agree to the collection and use of information as described in this policy.</p>
 
-    <h2>How We Use Your Information</h2>
+    <h2>1. Information We Collect</h2>
+
+    <h3>1.1 Account Information</h3>
+    <p>When you create an account, we collect:</p>
     <ul>
-        <li>To process voice recordings and convert them to expense entries</li>
-        <li>To store and display your financial tracking data</li>
-        <li>To sync your data across devices when logged in</li>
-        <li>To improve our services and user experience</li>
+        <li><strong>Email address</strong> — provided directly or via Google or Apple Sign-In</li>
+        <li><strong>Authentication credentials</strong> — passwords are hashed and never stored in plain text; OAuth tokens are managed securely by our authentication provider</li>
+        <li><strong>User ID</strong> — a unique identifier assigned to your account</li>
+        <li><strong>Account creation date</strong></li>
     </ul>
 
-    <h2>Data Storage and Security</h2>
-    <p>Your data is stored securely using industry-standard encryption. We use Supabase as our backend service provider, which implements robust security measures to protect your information.</p>
-
-    <h2>Microphone Permission</h2>
-    <p>TallyTalk requires microphone access solely for the purpose of recording voice memos to log expenses. We do not:</p>
+    <h3>1.2 Financial Data</h3>
+    <p>To provide the app's core functionality, we collect and store:</p>
     <ul>
-        <li>Record audio without your explicit action (pressing the record button)</li>
-        <li>Share audio recordings with third parties</li>
-        <li>Use recordings for advertising purposes</li>
+        <li>Expense and income amounts</li>
+        <li>Transaction descriptions</li>
+        <li>Transaction categories</li>
+        <li>Transaction dates</li>
+        <li>Transaction type (expense or income)</li>
     </ul>
 
-    <h2>Third-Party Services</h2>
-    <p>We may use third-party services for:</p>
+    <h3>1.3 Voice and Audio Data</h3>
+    <p>When you use the voice recording feature:</p>
     <ul>
-        <li>Authentication (Google Sign-In)</li>
-        <li>Data storage (Supabase)</li>
-        <li>Speech-to-text processing</li>
+        <li>Audio is recorded locally on your device in M4A format</li>
+        <li>The audio is converted to base64 and transmitted to our server for processing</li>
+        <li>Our server sends the audio to OpenAI's Whisper API for speech-to-text transcription</li>
+        <li>The resulting text transcript is stored with your expense record</li>
+        <li><strong>Audio files are not permanently stored</strong> — they are deleted from your device after processing, and OpenAI does not retain audio data submitted via their API</li>
     </ul>
-    <p>These services have their own privacy policies governing the use of your information.</p>
 
-    <h2>Data Retention</h2>
-    <p>We retain your data for as long as your account is active. You can request deletion of your account and associated data at any time by contacting us.</p>
+    <h3>1.4 Voice Transcripts</h3>
+    <p>The text transcription of your voice recording is stored in our database alongside the associated expense entry. This allows you to review what was spoken when the expense was created.</p>
 
-    <h2>Your Rights</h2>
+    <h3>1.5 User Preferences</h3>
+    <p>We store the following preferences locally on your device:</p>
+    <ul>
+        <li>Currency preference</li>
+        <li>Voice language preference</li>
+        <li>Onboarding completion status</li>
+    </ul>
+    <p>These preferences are not transmitted to our servers.</p>
+
+    <h3>1.6 Information We Do Not Collect</h3>
+    <p>TallyTalk does <strong>not</strong> collect:</p>
+    <ul>
+        <li>Location data</li>
+        <li>Contacts or address book data</li>
+        <li>Photos, videos, or files (other than voice recordings you initiate)</li>
+        <li>Device identifiers for advertising purposes</li>
+        <li>Browsing history</li>
+        <li>Analytics or usage tracking data</li>
+    </ul>
+
+    <h2>2. How We Use Your Information</h2>
+    <ul>
+        <li><strong>Expense tracking:</strong> To process, store, and display your financial transaction data</li>
+        <li><strong>Voice processing:</strong> To convert your voice recordings into text and extract expense details</li>
+        <li><strong>Authentication:</strong> To create and manage your account and keep your data secure</li>
+        <li><strong>Data synchronization:</strong> To sync your data across devices when you are signed in</li>
+    </ul>
+    <p>We do <strong>not</strong> use your data for advertising, profiling, or selling to third parties.</p>
+
+    <h2>3. How We Share Your Information</h2>
+    <p>We share your data only with the following third-party service providers, solely for the purpose of operating the app:</p>
+
+    <table>
+        <tr>
+            <th>Service Provider</th>
+            <th>Data Shared</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td><strong>Supabase</strong> (backend infrastructure)</td>
+            <td>Account information, financial data, voice transcripts</td>
+            <td>Database hosting, user authentication, server-side processing</td>
+        </tr>
+        <tr>
+            <td><strong>OpenAI</strong> (Whisper and GPT APIs)</td>
+            <td>Voice audio data (transient), text transcripts</td>
+            <td>Speech-to-text transcription and expense parsing</td>
+        </tr>
+        <tr>
+            <td><strong>Google</strong> (OAuth)</td>
+            <td>Authentication tokens (only if you choose Google Sign-In)</td>
+            <td>Account authentication</td>
+        </tr>
+        <tr>
+            <td><strong>Apple</strong> (Sign in with Apple)</td>
+            <td>Authentication tokens (only if you choose Apple Sign-In, iOS only)</td>
+            <td>Account authentication</td>
+        </tr>
+    </table>
+
+    <p>We do <strong>not</strong> sell, rent, or trade your personal information to any third party.</p>
+
+    <h2>4. Device Permissions</h2>
+
+    <h3>4.1 Microphone</h3>
+    <p>TallyTalk requires microphone access to record voice memos for expense tracking. Audio is only recorded when you explicitly tap the record button. We do not record audio in the background or without your knowledge.</p>
+
+    <h3>4.2 Internet</h3>
+    <p>Required to sync your data, process voice recordings, and authenticate your account.</p>
+
+    <h2>5. Data Storage and Security</h2>
+
+    <h3>5.1 In Transit</h3>
+    <p>All data transmitted between your device and our servers uses HTTPS/TLS encryption.</p>
+
+    <h3>5.2 At Rest</h3>
+    <ul>
+        <li><strong>Server-side:</strong> Your data is stored in a Supabase-managed PostgreSQL database with encryption at rest and row-level security policies that ensure you can only access your own data.</li>
+        <li><strong>On-device:</strong> Session tokens and preferences are stored using platform-standard secure storage mechanisms (Keychain on iOS, encrypted SharedPreferences on Android).</li>
+    </ul>
+
+    <h3>5.3 Passwords</h3>
+    <p>Passwords are hashed using bcrypt before storage. We never store or have access to your plain-text password.</p>
+
+    <h3>5.4 Audio Files</h3>
+    <p>Voice recordings are temporary. They exist on your device only during processing and are deleted immediately after the transcription is complete. Audio is not stored on our servers.</p>
+
+    <h2>6. Data Retention and Deletion</h2>
+
+    <h3>6.1 Retention</h3>
+    <p>We retain your account and financial data for as long as your account is active. Voice audio files are not retained — only the resulting text transcript is stored.</p>
+
+    <h3>6.2 Account Deletion</h3>
+    <p>You can delete your account at any time from within the app (Settings > Delete Account). When you delete your account:</p>
+    <ul>
+        <li>All your expense and income records are permanently deleted</li>
+        <li>All custom categories you created are permanently deleted</li>
+        <li>Your authentication account and associated data are permanently deleted</li>
+        <li>Local preferences on your device are cleared upon sign-out</li>
+    </ul>
+    <p>Account deletion is immediate and irreversible. We do not retain your data after deletion.</p>
+
+    <h3>6.3 Sign Out</h3>
+    <p>Signing out clears your local session data. Your account and stored data remain on our servers and are accessible when you sign back in.</p>
+
+    <h2>7. Your Rights</h2>
     <p>You have the right to:</p>
     <ul>
-        <li>Access your personal data</li>
-        <li>Request correction of inaccurate data</li>
-        <li>Request deletion of your data</li>
-        <li>Withdraw consent for data processing</li>
+        <li><strong>Access</strong> your personal data — all your data is visible within the app</li>
+        <li><strong>Delete</strong> your account and all associated data — available in app Settings</li>
+        <li><strong>Withdraw consent</strong> — you can revoke microphone permission at any time through your device settings; you can stop using voice features without affecting other app functionality</li>
+        <li><strong>Data portability</strong> — contact us to request an export of your data</li>
     </ul>
 
-    <h2>Children's Privacy</h2>
-    <p>TallyTalk is not intended for children under 13 years of age. We do not knowingly collect personal information from children.</p>
+    <h2>8. Children's Privacy</h2>
+    <p>TallyTalk is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected data from a child under 13, please contact us and we will promptly delete it.</p>
 
-    <h2>Changes to This Policy</h2>
-    <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the "Last updated" date.</p>
+    <h2>9. Home Screen Widget</h2>
+    <p>TallyTalk offers an optional home screen widget ("QuickRecord") for quick access to the voice recording feature. The widget does not access, display, or transmit any user data. It simply provides a shortcut to open the app's recording screen.</p>
 
-    <h2>Contact Us</h2>
-    <p>If you have questions about this Privacy Policy, please contact us at:</p>
-    <p>Email: privacy@tallytalk.app</p>
+    <h2>10. Changes to This Policy</h2>
+    <p>We may update this privacy policy from time to time. When we make changes, we will update the "Last updated" date at the top of this page. We encourage you to review this policy periodically. Continued use of the app after changes constitutes acceptance of the updated policy.</p>
+
+    <h2>11. Contact Us</h2>
+    <p>If you have questions, concerns, or requests regarding this privacy policy or your personal data, please contact us:</p>
+    <p><strong>Developer:</strong> Mayank Agrawal</p>
+    <p><strong>Email:</strong> <a href="mailto:privacy@tallytalk.app">privacy@tallytalk.app</a></p>
 
 </body>
 </html>

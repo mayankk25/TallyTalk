@@ -49,7 +49,8 @@ export default function TabLayout() {
         name="add"
         options={{
           title: 'Add',
-          headerTitle: 'New Transaction',
+          headerTitle: () => <Text style={styles.customHeaderTitle}>New Transaction</Text>,
+          headerTitleAlign: 'left',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="plus" color={color} focused={focused} />
           ),
@@ -59,7 +60,8 @@ export default function TabLayout() {
         name="analytics"
         options={{
           title: 'Analytics',
-          headerTitle: 'Analytics',
+          headerTitle: () => <Text style={styles.customHeaderTitle}>Analytics</Text>,
+          headerTitleAlign: 'left',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="pie-chart" color={color} focused={focused} />
           ),
@@ -69,7 +71,8 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Settings',
-          headerTitle: 'Settings',
+          headerTitle: () => <Text style={styles.customHeaderTitle}>Settings</Text>,
+          headerTitleAlign: 'left',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="cog" color={color} focused={focused} />
           ),

@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useDeepLink } from './_layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Text, View } from '@/components/Themed';
@@ -28,6 +29,7 @@ export default function RecordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, loading: authLoading } = useAuthContext();
+  const { triggerDataRefresh } = useDeepLink();
   const [screen, setScreen] = useState<Screen>('record');
   const [isReady, setIsReady] = useState(false);
   const [parsedExpenses, setParsedExpenses] = useState<ParsedExpense[]>([]);
@@ -47,7 +49,13 @@ export default function RecordScreen() {
   }, [authLoading, user, router]);
 
   // Navigate to home screen, dismissing any modals in the stack
-  const navigateToHome = () => {
+  const navigateToHome = (shouldRefresh = false) => {
+    // Trigger data refresh via context before navigating
+    // This ensures the home screen will refresh when it receives focus
+    if (shouldRefresh) {
+      triggerDataRefresh();
+    }
+
     // Use dismissAll to properly close the modal and go to the root
     // This prevents double navigation when deep link creates extra stack entries
     if (router.canDismiss()) {
@@ -87,20 +95,8 @@ export default function RecordScreen() {
 
       await saveMultipleExpenses(expensesToSave);
 
-      const incomeCount = expenses.filter(e => e.type === 'income').length;
-      const expenseCount = expenses.filter(e => e.type !== 'income').length;
-      let message = '';
-      if (incomeCount > 0 && expenseCount > 0) {
-        message = `${incomeCount} income and ${expenseCount} expense${expenseCount !== 1 ? 's' : ''} added`;
-      } else if (incomeCount > 0) {
-        message = `${incomeCount} income${incomeCount !== 1 ? 's' : ''} added`;
-      } else {
-        message = `${expenseCount} expense${expenseCount !== 1 ? 's' : ''} added`;
-      }
-
-      Alert.alert('Saved', message, [
-        { text: 'OK', onPress: navigateToHome },
-      ]);
+      // Navigate directly to home - the updated balance confirms the save
+      navigateToHome(true);
     } catch (error: any) {
       console.error('Failed to save:', error);
       Alert.alert('Error', error.message || 'Failed to save', [
@@ -150,7 +146,8 @@ export default function RecordScreen() {
         <View style={styles.voiceContainer}>
           <Text style={styles.voiceTitle}>Add Transaction</Text>
           <Text style={styles.voiceSubtitle}>
-            Say something like "Spent $20 on lunch" or "Received $500 salary"
+            Say something like "Spent $20 on lunch" or "Received $500 salary"{'\n'}
+            You can also record multiple items at once
           </Text>
           <View style={styles.recorderWrapper}>
             <VoiceRecorder

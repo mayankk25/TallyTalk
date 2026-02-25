@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets_home/illustration_icon.png",
     "scheme": "budgetapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "owner": "mayankk25",
     "splash": {
@@ -18,11 +18,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.voicebudget.app",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
+      "appleTeamId": "G56XFGV6A2",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "TallyTalk needs access to your microphone to record voice memos for expense tracking.",
-        "UIBackgroundModes": [
-          "audio"
-        ]
+        "NSMicrophoneUsageDescription": "TallyTalk needs access to your microphone to record voice memos for expense tracking."
       },
       "config": {
         "usesNonExemptEncryption": false

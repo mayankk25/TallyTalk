@@ -74,6 +74,7 @@ export default function OnboardingModal({ visible, onComplete }: OnboardingModal
       animationType="fade"
       presentationStyle="fullScreen"
       statusBarTranslucent
+      onRequestClose={onComplete}
     >
       <View style={styles.container}>
         {/* Skip Button */}

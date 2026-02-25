@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { Expense, Category, TransactionType, CategoryType } from '@/types';
+import { formatLocalDate, getMonthDateRange, getMonthName, isInMonth } from './dateUtils';
 
 interface ParsedExpense {
   amount: number;
@@ -13,14 +14,14 @@ interface ParseVoiceResponse {
 }
 
 export async function parseVoiceExpenses(audioUri: string, language: string = 'en'): Promise<ParseVoiceResponse> {
-  console.log('Reading audio file from:', audioUri);
-  console.log('Voice language:', language);
+  if (__DEV__) console.log('Reading audio file from:', audioUri);
+  if (__DEV__) console.log('Voice language:', language);
 
   // Fetch the audio file and convert to base64
   const response = await fetch(audioUri);
   const blob = await response.blob();
 
-  console.log('Audio blob size:', blob.size, 'bytes');
+  if (__DEV__) console.log('Audio blob size:', blob.size, 'bytes');
 
   if (blob.size > 5 * 1024 * 1024) {
     throw new Error('Audio file too large. Please record a shorter message.');
@@ -38,8 +39,8 @@ export async function parseVoiceExpenses(audioUri: string, language: string = 'e
     reader.readAsDataURL(blob);
   });
 
-  console.log('Audio base64 length:', base64Audio.length);
-  console.log('Calling edge function...');
+  if (__DEV__) console.log('Audio base64 length:', base64Audio.length);
+  if (__DEV__) console.log('Calling edge function...');
 
   // Call edge function directly with fetch to get full error
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -55,7 +56,7 @@ export async function parseVoiceExpenses(audioUri: string, language: string = 'e
   });
 
   const data = await funcResponse.json();
-  console.log('Edge function response:', funcResponse.status, data);
+  if (__DEV__) console.log('Edge function response:', funcResponse.status, data);
 
   if (!funcResponse.ok) {
     throw new Error(data.error || `Server error: ${funcResponse.status}`);
@@ -117,14 +118,19 @@ export async function saveMultipleExpenses(expenses: {
   category_id: string | null;
   voice_transcript?: string;
   type?: TransactionType;
+  expense_date?: string;
 }[]): Promise<Expense[]> {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) throw new Error('Not authenticated');
 
+  // Default to today's date in YYYY-MM-DD format if not provided (local timezone)
+  const today = formatLocalDate();
+
   const expensesWithUser = expenses.map(exp => ({
     ...exp,
     type: exp.type || 'expense',
+    expense_date: exp.expense_date || today,
     user_id: user.id,
   }));
 
@@ -145,11 +151,47 @@ export interface MonthlySummary {
   year: number;
 }
 
+/**
+ * Calculate monthly totals from an array of expenses (client-side).
+ * This is the preferred method as it ensures consistency across screens
+ * and avoids redundant API calls.
+ */
+export function calculateMonthlyTotals(
+  expenses: Expense[],
+  month: number = new Date().getMonth(),
+  year: number = new Date().getFullYear()
+): MonthlySummary {
+  // Filter expenses for the specified month
+  const monthlyExpenses = expenses.filter(expense => {
+    const expenseDate = expense.expense_date.split('T')[0]; // Handle both date and datetime strings
+    return isInMonth(expenseDate, month, year);
+  });
+
+  const totalExpenses = monthlyExpenses
+    .filter(e => e.type === 'expense' || !e.type)
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  const totalIncome = monthlyExpenses
+    .filter(e => e.type === 'income')
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  return {
+    totalExpenses,
+    totalIncome,
+    balance: totalIncome - totalExpenses,
+    month: getMonthName(month),
+    year,
+  };
+}
+
+/**
+ * Fetch monthly summary from the database (server-side query).
+ * Consider using calculateMonthlyTotals() with getExpenses() for consistency.
+ */
 export async function getMonthlySummary(date: Date = new Date()): Promise<MonthlySummary> {
   const year = date.getFullYear();
   const month = date.getMonth();
-  const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-  const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+  const { startDate, endDate } = getMonthDateRange(date);
 
   const { data, error } = await supabase
     .from('expenses')
@@ -167,14 +209,11 @@ export async function getMonthlySummary(date: Date = new Date()): Promise<Monthl
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'];
-
   return {
     totalExpenses,
     totalIncome,
     balance: totalIncome - totalExpenses,
-    month: monthNames[month],
+    month: getMonthName(month),
     year,
   };
 }
@@ -224,4 +263,29 @@ export async function deleteExpense(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) throw error;
+}
+
+export async function deleteAccount(): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) throw new Error('Not authenticated');
+
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/delete-account`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to delete account');
+  }
+
+  // Sign out locally after server-side deletion
+  await supabase.auth.signOut();
 }

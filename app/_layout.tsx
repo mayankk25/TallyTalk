@@ -23,12 +23,16 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
-// Deep link context for triggering recording from widget
+// Deep link context for triggering recording from widget and data refresh
 type DeepLinkContextType = {
   shouldOpenRecorder: boolean;
   clearRecorderFlag: () => void;
   initialDeepLink: string | null;
   clearInitialDeepLink: () => void;
+  // Data refresh signal - used when expenses are added from record screen
+  shouldRefreshData: boolean;
+  triggerDataRefresh: () => void;
+  clearRefreshFlag: () => void;
 };
 
 const DeepLinkContext = createContext<DeepLinkContextType>({
@@ -36,6 +40,9 @@ const DeepLinkContext = createContext<DeepLinkContextType>({
   clearRecorderFlag: () => {},
   initialDeepLink: null,
   clearInitialDeepLink: () => {},
+  shouldRefreshData: false,
+  triggerDataRefresh: () => {},
+  clearRefreshFlag: () => {},
 });
 
 export const useDeepLink = () => useContext(DeepLinkContext);
@@ -114,6 +121,7 @@ export default function RootLayout() {
   });
   const [shouldOpenRecorder, setShouldOpenRecorder] = useState(false);
   const [initialDeepLink, setInitialDeepLink] = useState<string | null>(null);
+  const [shouldRefreshData, setShouldRefreshData] = useState(false);
 
   const clearRecorderFlag = useCallback(() => {
     setShouldOpenRecorder(false);
@@ -121,6 +129,14 @@ export default function RootLayout() {
 
   const clearInitialDeepLink = useCallback(() => {
     setInitialDeepLink(null);
+  }, []);
+
+  const triggerDataRefresh = useCallback(() => {
+    setShouldRefreshData(true);
+  }, []);
+
+  const clearRefreshFlag = useCallback(() => {
+    setShouldRefreshData(false);
   }, []);
 
   // Deep links are now handled automatically by expo-router
@@ -142,6 +158,9 @@ export default function RootLayout() {
         clearRecorderFlag,
         initialDeepLink,
         clearInitialDeepLink,
+        shouldRefreshData,
+        triggerDataRefresh,
+        clearRefreshFlag,
       }}>
         <AuthProvider>
           <RootLayoutNav />

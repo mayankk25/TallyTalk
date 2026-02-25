@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
+import { StyleSheet, TouchableOpacity, Animated, Easing, Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Text, View } from './Themed';
@@ -75,8 +75,22 @@ export default function VoiceRecorder({
   useEffect(() => {
     if (autoStart && permissionGranted && !hasAutoStarted && !isProcessing) {
       setHasAutoStarted(true);
-      // Small delay to ensure audio mode is set
-      setTimeout(() => startRecording(), 100);
+      // Start immediately - no delay needed since permissions are already granted
+      const startWithRetry = async (attempt = 1) => {
+        try {
+          await startRecording();
+        } catch (err) {
+          if (__DEV__) console.log(`Auto-start attempt ${attempt} failed, retrying...`);
+          if (attempt < 3) {
+            // Short retry delay only on failure
+            setTimeout(() => startWithRetry(attempt + 1), 150);
+          } else {
+            Alert.alert('Recording Failed', 'Could not start recording. Please try again.');
+          }
+        }
+      };
+      // Start immediately without delay
+      startWithRetry();
     }
   }, [autoStart, permissionGranted, hasAutoStarted, isProcessing]);
 
@@ -139,7 +153,7 @@ export default function VoiceRecorder({
         });
       }
     } catch (err) {
-      console.error('Failed to get permissions', err);
+      if (__DEV__) console.error('Failed to get permissions', err);
     }
   };
 
@@ -166,13 +180,14 @@ export default function VoiceRecorder({
         playsInSilentModeIOS: true,
       });
 
-      console.log('Starting recording...');
+      if (__DEV__) console.log('Starting recording...');
       const { recording: newRecording } = await Audio.Recording.createAsync(recordingOptions);
       setRecording(newRecording);
       setIsRecording(true);
-      console.log('Recording started');
+      if (__DEV__) console.log('Recording started');
     } catch (err) {
-      console.error('Failed to start recording', err);
+      if (__DEV__) console.error('Failed to start recording', err);
+      throw err; // Re-throw for retry logic
     }
   };
 
@@ -180,18 +195,18 @@ export default function VoiceRecorder({
     if (!recording) return;
 
     try {
-      console.log('Stopping recording...');
+      if (__DEV__) console.log('Stopping recording...');
       setIsRecording(false);
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
       setRecording(null);
-      console.log('Recording stopped, URI:', uri);
+      if (__DEV__) console.log('Recording stopped, URI:', uri);
 
       if (uri) {
         onRecordingComplete(uri);
       }
     } catch (err) {
-      console.error('Failed to stop recording', err);
+      if (__DEV__) console.error('Failed to stop recording', err);
     }
   };
 

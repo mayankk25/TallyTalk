@@ -11,7 +11,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import EditExpenseModal from '@/components/EditExpenseModal';
-import { getExpenses, deleteExpense } from '@/lib/api';
+import { getExpenses, deleteExpense, calculateMonthlyTotals } from '@/lib/api';
 import { Expense } from '@/types';
 import { useCurrency } from '@/hooks/useCurrency';
 
@@ -179,13 +179,13 @@ export default function TransactionsScreen() {
   };
 
   const getTotals = () => {
-    const income = filteredExpenses
-      .filter(e => e.type === 'income')
-      .reduce((sum, e) => sum + e.amount, 0);
-    const expenses = filteredExpenses
-      .filter(e => e.type === 'expense' || !e.type)
-      .reduce((sum, e) => sum + e.amount, 0);
-    return { income, expenses, balance: income - expenses };
+    // Use the shared calculation function for consistency with HomeScreen
+    const summary = calculateMonthlyTotals(allExpenses, selectedMonth, selectedYear);
+    return {
+      income: summary.totalIncome,
+      expenses: summary.totalExpenses,
+      balance: summary.balance,
+    };
   };
 
   const formatDate = (dateString: string) => {

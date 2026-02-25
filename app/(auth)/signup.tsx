@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -16,6 +16,7 @@ import {
 import { Link, router } from 'expo-router';
 import { useAuthContext } from '@/lib/AuthContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,7 +26,16 @@ export default function SignupNewScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { signUp, signInWithGoogle } = useAuthContext();
+  const [appleLoading, setAppleLoading] = useState(false);
+  const [appleSignInAvailable, setAppleSignInAvailable] = useState(false);
+  const { signUp, signInWithGoogle, signInWithApple } = useAuthContext();
+
+  useEffect(() => {
+    // Check if Apple Sign In is available (iOS only)
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setAppleSignInAvailable);
+    }
+  }, []);
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword) {
@@ -67,13 +77,22 @@ export default function SignupNewScreen() {
     }
   };
 
+  const handleAppleSignup = async () => {
+    setAppleLoading(true);
+    const { error } = await signInWithApple();
+    setAppleLoading(false);
+
+    if (error && error.message !== 'Sign in was cancelled') {
+      Alert.alert('Error', error.message);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      {/* Top line */}
-      <View style={styles.topLine} />
+      {/* Top line removed */}
 
       {/* Back button */}
       <TouchableOpacity
@@ -99,7 +118,7 @@ export default function SignupNewScreen() {
             <TouchableOpacity
               style={styles.googleButton}
               onPress={handleGoogleSignup}
-              disabled={googleLoading || loading}
+              disabled={googleLoading || loading || appleLoading}
             >
               {googleLoading ? (
                 <ActivityIndicator color="#fff" />
@@ -114,6 +133,24 @@ export default function SignupNewScreen() {
                 </>
               )}
             </TouchableOpacity>
+
+            {/* Apple Sign Up Button */}
+            {appleSignInAvailable && (
+              <TouchableOpacity
+                style={styles.appleButton}
+                onPress={handleAppleSignup}
+                disabled={appleLoading || loading || googleLoading}
+              >
+                {appleLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <FontAwesome name="apple" size={18} color="#fff" />
+                    <Text style={styles.appleButtonText}>Continue with Apple</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
 
             <View style={styles.dividerContainer}>
               <View style={styles.divider} />
@@ -150,7 +187,7 @@ export default function SignupNewScreen() {
             <TouchableOpacity
               style={styles.createButton}
               onPress={handleSignup}
-              disabled={loading || googleLoading}
+              disabled={loading || googleLoading || appleLoading}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
@@ -211,7 +248,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
-    paddingTop: 120,
+    paddingTop: 80,
     paddingBottom: 40,
   },
   title: {
@@ -248,6 +285,27 @@ const styles = StyleSheet.create({
     height: 16,
   },
   googleButtonText: {
+    fontSize: 15,
+    color: '#FFFFFF',
+    letterSpacing: -0.9,
+    fontFamily: 'Eina01-Regular',
+  },
+  appleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000000',
+    borderRadius: 28,
+    paddingVertical: 13,
+    paddingHorizontal: 24,
+    gap: 10,
+    marginBottom: 20,
+  },
+  appleLogo: {
+    fontSize: 18,
+    color: '#FFFFFF',
+  },
+  appleButtonText: {
     fontSize: 15,
     color: '#FFFFFF',
     letterSpacing: -0.9,

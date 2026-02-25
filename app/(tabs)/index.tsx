@@ -21,7 +21,7 @@ import { hasCompletedOnboarding, setOnboardingComplete, getVoiceLanguage } from 
 import {
   getExpenses,
   deleteExpense,
-  getMonthlySummary,
+  calculateMonthlyTotals,
   MonthlySummary,
   parseVoiceExpenses,
   saveMultipleExpenses,
@@ -43,7 +43,7 @@ interface DaySection {
 export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ openRecorder?: string }>();
-  const { shouldOpenRecorder, clearRecorderFlag } = useDeepLink();
+  const { shouldOpenRecorder, clearRecorderFlag, shouldRefreshData, clearRefreshFlag } = useDeepLink();
   const { currency, formatCurrency, formatAmount, refresh: refreshCurrency } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<MonthlySummary | null>(null);
@@ -83,6 +83,14 @@ export default function HomeScreen() {
     }
   }, [params.openRecorder, loading]);
 
+  // Handle data refresh signal (from record screen after saving)
+  useEffect(() => {
+    if (shouldRefreshData && !loading) {
+      loadData();
+      clearRefreshFlag();
+    }
+  }, [shouldRefreshData, loading, clearRefreshFlag]);
+
   // Check onboarding status on mount
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -101,10 +109,11 @@ export default function HomeScreen() {
 
   const loadData = async () => {
     try {
-      const [expensesData, summaryData] = await Promise.all([
-        getExpenses(),
-        getMonthlySummary(),
-      ]);
+      // Fetch all expenses, then calculate summary client-side
+      // This ensures consistency with the transactions screen
+      const expensesData = await getExpenses();
+      const summaryData = calculateMonthlyTotals(expensesData);
+
       setExpenses(expensesData);
       setSummary(summaryData);
 
@@ -464,7 +473,8 @@ export default function HomeScreen() {
               <View style={styles.voiceContainer}>
                 <Text style={styles.voiceTitle}>Add Transaction</Text>
                 <Text style={styles.voiceSubtitle}>
-                  Say something like "Spent $20 on lunch" or "Received $500 salary"
+                  Say something like "Spent $20 on lunch" or "Received $500 salary"{'\n'}
+                  You can also record multiple items at once
                 </Text>
                 <View style={styles.recorderWrapper}>
                   <VoiceRecorder

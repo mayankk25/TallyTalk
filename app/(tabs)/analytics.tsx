@@ -28,13 +28,14 @@ type SpendingViewType = 'monthly' | 'daily';
 interface SelectedDay {
   day: number;
   amount: number;
+  index: number;
 }
 
 export default function AnalyticsScreen() {
   const { currency, formatCurrency, refresh: refreshCurrency } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
-  const [spendingView, setSpendingView] = useState<SpendingViewType>('monthly');
+  const [spendingView, setSpendingView] = useState<SpendingViewType>('daily');
   const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null);
 
   useFocusEffect(
@@ -118,10 +119,13 @@ export default function AnalyticsScreen() {
 
   // Daily spending for bar chart (current month)
   const getDailySpending = () => {
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const result = [];
+    const totalDays = now.getDate();
 
-    for (let day = 1; day <= daysInMonth; day++) {
+    // Determine label interval based on number of days
+    const labelInterval = totalDays <= 10 ? 2 : totalDays <= 20 ? 5 : 7;
+
+    for (let day = 1; day <= totalDays; day++) {
       const dayTotal = currentMonthExpenses
         .filter(e => {
           const expDate = new Date(e.expense_date);
@@ -129,15 +133,16 @@ export default function AnalyticsScreen() {
         })
         .reduce((sum, e) => sum + e.amount, 0);
 
-      // Only show label for certain days to avoid crowding
-      const showLabel = day === 1 || day === 10 || day === 20 || day === daysInMonth;
+      // Show label at intervals, plus first and last day
+      const showLabel = day === 1 || day === totalDays || day % labelInterval === 0;
       const isSelected = selectedDay?.day === day;
 
       result.push({
         value: dayTotal,
-        label: showLabel ? day.toString() : '',
-        frontColor: isSelected ? '#FF3B30' : (day <= now.getDate() ? '#000' : '#E0E0E0'),
-        onPress: () => setSelectedDay({ day, amount: dayTotal }),
+        label: showLabel ? String(day) : '',
+        frontColor: isSelected ? '#FF9500' : '#000',
+        labelTextStyle: { color: '#8E8E93', fontSize: 10, textAlign: 'center' },
+        onPress: () => setSelectedDay({ day, amount: dayTotal, index: day - 1 }),
       });
     }
     return result;
@@ -153,6 +158,12 @@ export default function AnalyticsScreen() {
 
   // Find max daily spending for chart scaling
   const maxDailySpend = Math.max(...dailyData.map(d => d.value), 1);
+
+  // Chart dimensions
+  const barWidth = 8;
+  const barSpacing = 6;
+  const initialSpacing = 15;
+  const yAxisWidth = 35;
 
   if (loading) {
     return (
@@ -172,11 +183,11 @@ export default function AnalyticsScreen() {
       <View style={styles.summaryRow}>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Spent this month</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(totalSpentThisMonth)}</Text>
+          <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(totalSpentThisMonth)}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Daily average</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(avgDailySpend)}</Text>
+          <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(avgDailySpend)}</Text>
         </View>
       </View>
 
@@ -185,18 +196,18 @@ export default function AnalyticsScreen() {
         <View style={styles.incomeExpenseRow}>
           <View style={styles.incomeExpenseItem}>
             <View style={[styles.indicator, styles.incomeIndicator]} />
-            <View>
+            <View style={styles.incomeExpenseTextContainer}>
               <Text style={styles.incomeExpenseLabel}>Income</Text>
-              <Text style={[styles.incomeExpenseValue, styles.incomeText]}>
+              <Text style={[styles.incomeExpenseValue, styles.incomeText]} numberOfLines={1} adjustsFontSizeToFit>
                 +{formatCurrency(totalIncomeThisMonth)}
               </Text>
             </View>
           </View>
           <View style={styles.incomeExpenseItem}>
             <View style={[styles.indicator, styles.expenseIndicator]} />
-            <View>
+            <View style={styles.incomeExpenseTextContainer}>
               <Text style={styles.incomeExpenseLabel}>Expenses</Text>
-              <Text style={[styles.incomeExpenseValue, styles.expenseText]}>
+              <Text style={[styles.incomeExpenseValue, styles.expenseText]} numberOfLines={1} adjustsFontSizeToFit>
                 -{formatCurrency(totalSpentThisMonth)}
               </Text>
             </View>
@@ -294,7 +305,7 @@ export default function AnalyticsScreen() {
           )
         ) : (
           // Daily Bar Chart
-          dailyData.some(d => d.value > 0) ? (
+          dailyData.length > 0 ? (
             <View>
               <View style={styles.dailyChartHeader}>
                 <Text style={styles.chartSubtitle}>
@@ -311,24 +322,29 @@ export default function AnalyticsScreen() {
                   </View>
                 )}
               </View>
-              <BarChart
-                data={dailyData}
-                width={CHART_WIDTH - 20}
-                height={180}
-                barWidth={6}
-                spacing={2}
-                xAxisColor="#E0E0E0"
-                yAxisColor="#E0E0E0"
-                yAxisTextStyle={styles.axisLabel}
-                xAxisLabelTextStyle={styles.dayLabel}
-                hideRules
-                noOfSections={4}
-                maxValue={maxDailySpend * 1.2}
-                initialSpacing={8}
-                endSpacing={8}
-                barBorderRadius={4}
-              />
-              <Text style={styles.chartHint}>Tap a bar to see details</Text>
+              <View>
+                <BarChart
+                  data={dailyData}
+                  width={CHART_WIDTH - 20}
+                  height={180}
+                  barWidth={barWidth}
+                  spacing={barSpacing}
+                  xAxisColor="#E0E0E0"
+                  yAxisColor="#E0E0E0"
+                  yAxisTextStyle={styles.axisLabel}
+                  xAxisLabelTextStyle={styles.dayLabelCenter}
+                  hideRules
+                  noOfSections={4}
+                  maxValue={maxDailySpend * 1.2}
+                  initialSpacing={initialSpacing}
+                  endSpacing={15}
+                  barBorderRadius={3}
+                  labelsExtraHeight={20}
+                  yAxisLabelWidth={yAxisWidth}
+                  autoShiftLabels
+                />
+              </View>
+              <Text style={styles.axisTitle}>Day of Month</Text>
             </View>
           ) : (
             <View style={styles.noDataContainer}>
@@ -343,27 +359,29 @@ export default function AnalyticsScreen() {
         <Text style={styles.sectionTitle}>Spending by Category</Text>
         {pieData.length > 0 ? (
           <View style={styles.pieContainer}>
-            <PieChart
-              data={pieData}
-              donut
-              radius={80}
-              innerRadius={50}
-              innerCircleColor="#fff"
-              centerLabelComponent={() => (
-                <View style={styles.pieCenter}>
-                  <Text style={styles.pieCenterAmount}>{formatCurrency(totalSpentThisMonth)}</Text>
-                  <Text style={styles.pieCenterLabel}>Total</Text>
-                </View>
-              )}
-            />
+            <View style={styles.pieChartWrapper}>
+              <PieChart
+                data={pieData}
+                donut
+                radius={110}
+                innerRadius={70}
+                innerCircleColor="#fff"
+                centerLabelComponent={() => (
+                  <View style={styles.pieCenter}>
+                    <Text style={styles.pieCenterAmount} numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(totalSpentThisMonth)}</Text>
+                    <Text style={styles.pieCenterLabel}>Total</Text>
+                  </View>
+                )}
+              />
+            </View>
             <View style={styles.legendContainer}>
               {pieData.slice(0, 5).map((item, index) => (
                 <View key={index} style={styles.legendItem}>
                   <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                  <Text style={styles.legendText} numberOfLines={1}>
+                  <Text style={styles.legendText} numberOfLines={1} ellipsizeMode="tail">
                     {item.text}
                   </Text>
-                  <Text style={styles.legendValue}>{formatCurrency(item.value)}</Text>
+                  <Text style={styles.legendValue} numberOfLines={1}>{formatCurrency(item.value)}</Text>
                 </View>
               ))}
             </View>
@@ -389,8 +407,8 @@ export default function AnalyticsScreen() {
                   </View>
                   <View style={styles.topCategoryInfo}>
                     <View style={styles.topCategoryHeader}>
-                      <Text style={styles.topCategoryName}>{name}</Text>
-                      <Text style={styles.topCategoryAmount}>{formatCurrency(amount)}</Text>
+                      <Text style={styles.topCategoryName} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+                      <Text style={styles.topCategoryAmount} numberOfLines={1}>{formatCurrency(amount)}</Text>
                     </View>
                     <View style={styles.topCategoryBarBg}>
                       <View
@@ -480,6 +498,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    backgroundColor: 'transparent',
+    flex: 1,
+  },
+  incomeExpenseTextContainer: {
+    flex: 1,
     backgroundColor: 'transparent',
   },
   indicator: {
@@ -620,6 +643,25 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#8E8E93',
   },
+  dayLabelCenter: {
+    fontSize: 10,
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
+  axisTitle: {
+    fontSize: 10,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  yAxisTitle: {
+    fontSize: 10,
+    color: '#8E8E93',
+    position: 'absolute',
+    left: -5,
+    top: 80,
+    transform: [{ rotate: '-90deg' }],
+  },
   noDataContainer: {
     height: 160,
     justifyContent: 'center',
@@ -632,15 +674,17 @@ const styles = StyleSheet.create({
 
   // Pie Chart
   pieContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'space-between',
+  },
+  pieChartWrapper: {
+    marginBottom: 20,
   },
   pieCenter: {
     alignItems: 'center',
   },
   pieCenterAmount: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#000',
   },
@@ -649,8 +693,7 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
   },
   legendContainer: {
-    flex: 1,
-    marginLeft: 20,
+    width: '100%',
   },
   legendItem: {
     flexDirection: 'row',
@@ -668,11 +711,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: '#000',
+    marginRight: 8,
   },
   legendValue: {
     fontSize: 13,
     fontWeight: '500',
     color: '#8E8E93',
+    flexShrink: 0,
   },
 
   // Top Categories
@@ -712,11 +757,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: '#000',
+    flex: 1,
+    marginRight: 12,
   },
   topCategoryAmount: {
     fontSize: 15,
     fontWeight: '600',
     color: '#000',
+    flexShrink: 0,
   },
   topCategoryBarBg: {
     height: 6,

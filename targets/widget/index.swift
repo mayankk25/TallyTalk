@@ -27,13 +27,26 @@ struct WidgetEntryView : View {
     @Environment(\.widgetFamily) var family
 
     var body: some View {
-        switch family {
-        case .systemSmall:
-            SmallWidgetView()
-        case .systemMedium:
-            MediumWidgetView()
-        default:
-            SmallWidgetView()
+        if #available(iOSApplicationExtension 16.0, *) {
+            switch family {
+            case .systemSmall:
+                SmallWidgetView()
+            case .systemMedium:
+                MediumWidgetView()
+            case .accessoryRectangular:
+                LockScreenRectangularView()
+            default:
+                SmallWidgetView()
+            }
+        } else {
+            switch family {
+            case .systemSmall:
+                SmallWidgetView()
+            case .systemMedium:
+                MediumWidgetView()
+            default:
+                SmallWidgetView()
+            }
         }
     }
 }
@@ -109,9 +122,42 @@ struct MediumWidgetView: View {
     }
 }
 
+// MARK: - Lock Screen Widget (iOS 16+)
+
+@available(iOSApplicationExtension 16.0, *)
+struct LockScreenRectangularView: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "mic.fill")
+                .font(.system(size: 24, weight: .medium))
+                .widgetAccentable()
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Record Expense")
+                    .font(.system(size: 14, weight: .semibold))
+
+                Text("Tap to speak")
+                    .font(.system(size: 12, weight: .regular))
+                    .opacity(0.7)
+            }
+
+            Spacer()
+        }
+        .widgetURL(URL(string: "budgetapp://record"))
+    }
+}
+
 @main
 struct QuickRecordWidget: Widget {
     let kind: String = "QuickRecordWidget"
+
+    private var supportedFamilies: [WidgetFamily] {
+        if #available(iOSApplicationExtension 16.0, *) {
+            return [.systemSmall, .systemMedium, .accessoryRectangular]
+        } else {
+            return [.systemSmall, .systemMedium]
+        }
+    }
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
@@ -119,6 +165,6 @@ struct QuickRecordWidget: Widget {
         }
         .configurationDisplayName("Quick Record")
         .description("Tap to quickly record an expense by voice.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies(supportedFamilies)
     }
 }
