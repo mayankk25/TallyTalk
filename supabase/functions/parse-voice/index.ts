@@ -76,10 +76,10 @@ async function parseTransactionsWithGPT(transcript: string): Promise<ParsedTrans
       messages: [
         {
           role: "system",
-          content: `You extract financial transactions from voice transcripts. The transcript may be translated from another language - ALWAYS output descriptions in English regardless of the original language. ALWAYS return a JSON array with at least one transaction if there's a dollar amount mentioned.
+          content: `You extract financial transactions from voice transcripts. The transcript may be translated from another language - ALWAYS output descriptions in English regardless of the original language. ALWAYS return a JSON array with at least one transaction if there's a monetary amount mentioned.
 
 Each transaction needs:
-- amount: number (dollar amount, always positive)
+- amount: number (exact numeric amount as spoken, always positive — do NOT convert currencies)
 - description: string (brief description of what it's for)
 - suggested_category: string (from the lists below)
 - type: "expense" or "income"
@@ -95,12 +95,16 @@ EXPENSE indicators (use type: "expense"):
 EXPENSE categories: "Food & Dining", "Groceries", "Transport", "Entertainment", "Shopping", "Bills & Utilities", "Health", "Other"
 INCOME categories: "Salary", "Freelance", "Investments", "Gifts", "Refunds", "Other Income"
 
+IMPORTANT: NEVER convert between currencies. Always use the exact number spoken. If someone says "190 baht", the amount is 190, not a USD equivalent. If someone says "500 rupees", the amount is 500.
+
 Examples:
-- "$20 for lunch" → [{"amount": 20, "description": "lunch", "suggested_category": "Food & Dining", "type": "expense"}]
-- "$5000 salary" or "$5000 for salary" → [{"amount": 5000, "description": "salary", "suggested_category": "Salary", "type": "income"}]
-- "Got $50 refund" → [{"amount": 50, "description": "refund", "suggested_category": "Refunds", "type": "income"}]
-- "$100 freelance work" → [{"amount": 100, "description": "freelance work", "suggested_category": "Freelance", "type": "income"}]
-- "$25 coffee and $30 uber" → [{"amount": 25, "description": "coffee", "suggested_category": "Food & Dining", "type": "expense"}, {"amount": 30, "description": "uber", "suggested_category": "Transport", "type": "expense"}]
+- "20 for lunch" → [{"amount": 20, "description": "lunch", "suggested_category": "Food & Dining", "type": "expense"}]
+- "5000 salary" or "5000 for salary" → [{"amount": 5000, "description": "salary", "suggested_category": "Salary", "type": "income"}]
+- "Got 50 refund" → [{"amount": 50, "description": "refund", "suggested_category": "Refunds", "type": "income"}]
+- "100 freelance work" → [{"amount": 100, "description": "freelance work", "suggested_category": "Freelance", "type": "income"}]
+- "25 coffee and 30 uber" → [{"amount": 25, "description": "coffee", "suggested_category": "Food & Dining", "type": "expense"}, {"amount": 30, "description": "uber", "suggested_category": "Transport", "type": "expense"}]
+- "190 baht for coffee" → [{"amount": 190, "description": "coffee", "suggested_category": "Food & Dining", "type": "expense"}]
+- "100 baht for taxi and 50 for water" → [{"amount": 100, "description": "taxi", "suggested_category": "Transport", "type": "expense"}, {"amount": 50, "description": "water", "suggested_category": "Groceries", "type": "expense"}]
 
 IMPORTANT: If the description mentions salary, paycheck, freelance, bonus, refund, income, or similar - it's INCOME, not expense.
 
