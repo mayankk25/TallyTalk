@@ -243,7 +243,10 @@ export function useAuth(): AuthState {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Sign out error:', error);
+    }
   }, []);
 
   const deleteAccount = useCallback(async () => {

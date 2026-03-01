@@ -17,7 +17,7 @@ import EditExpenseModal from '@/components/EditExpenseModal';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import ExpenseReview from '@/components/ExpenseReview';
 import OnboardingModal from '@/components/OnboardingModal';
-import { hasCompletedOnboarding, setOnboardingComplete, getVoiceLanguage } from '@/lib/storage';
+import { hasCompletedOnboarding, setOnboardingComplete, getVoiceLanguage, hasGrantedAIConsent, setAIConsentGranted } from '@/lib/storage';
 import {
   getExpenses,
   deleteExpense,
@@ -62,6 +62,32 @@ export default function HomeScreen() {
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  const openVoiceRecorderWithConsent = useCallback(async () => {
+    const consented = await hasGrantedAIConsent();
+    if (consented) {
+      setShowVoiceModal(true);
+      return;
+    }
+
+    Alert.alert(
+      'Voice Processing',
+      'To convert your voice into expenses, your audio recording is sent to OpenAI for transcription and processing. No audio is stored — only the resulting text is saved. See our Privacy Policy for details.',
+      [
+        {
+          text: "Don't Allow",
+          style: 'cancel',
+        },
+        {
+          text: 'Allow',
+          onPress: async () => {
+            await setAIConsentGranted();
+            setShowVoiceModal(true);
+          },
+        },
+      ],
+    );
+  }, []);
+
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -69,19 +95,19 @@ export default function HomeScreen() {
   // Handle deep link from widget (via context)
   useEffect(() => {
     if (shouldOpenRecorder && !loading) {
-      setShowVoiceModal(true);
+      openVoiceRecorderWithConsent();
       clearRecorderFlag();
     }
-  }, [shouldOpenRecorder, loading, clearRecorderFlag]);
+  }, [shouldOpenRecorder, loading, clearRecorderFlag, openVoiceRecorderWithConsent]);
 
   // Handle deep link from widget (via URL param)
   useEffect(() => {
     if (params.openRecorder === 'true' && !loading) {
-      setShowVoiceModal(true);
+      openVoiceRecorderWithConsent();
       // Clear the param by replacing with clean URL
       router.replace('/(tabs)');
     }
-  }, [params.openRecorder, loading]);
+  }, [params.openRecorder, loading, openVoiceRecorderWithConsent]);
 
   // Handle data refresh signal (from record screen after saving)
   useEffect(() => {
@@ -214,7 +240,7 @@ export default function HomeScreen() {
   };
 
   // Voice recording handlers
-  const handleRecordingComplete = async (uri: string) => {
+  const processRecording = async (uri: string) => {
     setIsProcessing(true);
     try {
       const language = await getVoiceLanguage();
@@ -224,10 +250,17 @@ export default function HomeScreen() {
       setVoiceScreen('review');
     } catch (error: any) {
       console.error('Failed to parse voice:', error);
-      Alert.alert('Error', error.message || 'Failed to process recording');
+      resetVoiceModal();
+      setTimeout(() => {
+        Alert.alert('Error', error.message || 'Failed to process recording');
+      }, 300);
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleRecordingComplete = async (uri: string) => {
+    processRecording(uri);
   };
 
   const handleVoiceConfirm = async (expenses: ParsedExpense[]) => {
@@ -252,12 +285,17 @@ export default function HomeScreen() {
       } else {
         message = `${expenseCount} expense${expenseCount !== 1 ? 's' : ''} added`;
       }
-      Alert.alert('Saved', message);
       resetVoiceModal();
       loadData();
+      setTimeout(() => {
+        Alert.alert('Saved', message);
+      }, 300);
     } catch (error: any) {
       console.error('Failed to save:', error);
-      Alert.alert('Error', error.message || 'Failed to save');
+      resetVoiceModal();
+      setTimeout(() => {
+        Alert.alert('Error', error.message || 'Failed to save');
+      }, 300);
     } finally {
       setIsSaving(false);
     }
@@ -445,7 +483,7 @@ export default function HomeScreen() {
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => setShowVoiceModal(true)}
+        onPress={openVoiceRecorderWithConsent}
         activeOpacity={0.9}
       >
         <FontAwesome name="microphone" size={24} color="#fff" />

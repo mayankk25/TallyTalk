@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const ONBOARDING_KEY = '@tallytalk:onboarding_completed';
 const VOICE_LANGUAGE_KEY = '@tallytalk:voice_language';
 const CURRENCY_KEY = '@tallytalk:currency';
+const AI_CONSENT_KEY = '@tallytalk:ai_consent_granted';
 
 // Supported voice languages
 export type VoiceLanguage = 'en' | 'hi' | 'es' | 'fr' | 'de' | 'zh' | 'ja' | 'ar';
@@ -136,6 +137,30 @@ export async function setCurrency(currency: CurrencyCode): Promise<void> {
     await AsyncStorage.setItem(CURRENCY_KEY, currency);
   } catch (error) {
     console.error('Error saving currency:', error);
+  }
+}
+
+/**
+ * Check if user has granted AI data-sharing consent
+ */
+export async function hasGrantedAIConsent(): Promise<boolean> {
+  try {
+    const value = await AsyncStorage.getItem(AI_CONSENT_KEY);
+    return value === 'true';
+  } catch (error) {
+    console.error('Error reading AI consent status:', error);
+    return false;
+  }
+}
+
+/**
+ * Store that user has granted AI data-sharing consent
+ */
+export async function setAIConsentGranted(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(AI_CONSENT_KEY, 'true');
+  } catch (error) {
+    console.error('Error saving AI consent status:', error);
   }
 }
 
