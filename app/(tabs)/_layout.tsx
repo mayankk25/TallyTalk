@@ -46,6 +46,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="transactions"
+        options={{
+          title: 'History',
+          headerTitle: () => <Text style={styles.customHeaderTitle}>Transactions</Text>,
+          headerTitleAlign: 'left',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="list-ul" color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="add"
         options={{
           title: 'Add',

@@ -33,7 +33,7 @@ interface DailySection {
   data: Expense[];
 }
 
-export default function TransactionsScreen() {
+export default function TransactionsScreen({ isTab = false }: { isTab?: boolean } = {}) {
   const router = useRouter();
   const { currency, formatCurrency, formatAmount } = useCurrency();
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
@@ -305,18 +305,21 @@ export default function TransactionsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Handle Bar */}
-      <View style={styles.handleBar} />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Transactions</Text>
-          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-            <FontAwesome name="times" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Handle Bar & Header (modal only) */}
+      {!isTab && (
+        <>
+          <View style={styles.handleBar} />
+          <View style={styles.header}>
+            <View style={styles.headerRow}>
+              <Text style={styles.headerTitle}>Transactions</Text>
+              <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+                <FontAwesome name="times" size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </>
+      )}
+      {isTab && <View style={{ height: 8, backgroundColor: 'transparent' }} />}
 
       {/* Month Selector */}
       <View style={styles.monthSelector}>

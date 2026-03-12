@@ -17,26 +17,20 @@ const { width } = Dimensions.get('window');
 const CHART_WIDTH = width - 80;
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const CATEGORY_COLORS = [
   '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
   '#FF9F40', '#FF6384', '#C9CBCF', '#7BC225', '#E8175D',
 ];
 
-type SpendingViewType = 'monthly' | 'daily';
-
-interface SelectedDay {
-  day: number;
-  amount: number;
-  index: number;
-}
+type SpendingViewType = 'week' | 'daily' | 'monthly';
 
 export default function AnalyticsScreen() {
   const { currency, formatCurrency, refresh: refreshCurrency } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
-  const [spendingView, setSpendingView] = useState<SpendingViewType>('daily');
-  const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null);
+  const [spendingView, setSpendingView] = useState<SpendingViewType>('week');
 
   useFocusEffect(
     useCallback(() => {
@@ -93,6 +87,17 @@ export default function AnalyticsScreen() {
       focused: index === 0,
     }));
 
+  // Compact y-axis formatter
+  const formatChartYLabel = useCallback((label: string) => {
+    const num = parseFloat(label);
+    if (isNaN(num) || num === 0) return '0';
+    if (num >= 1000) {
+      const k = num / 1000;
+      return k % 1 === 0 ? `${k.toFixed(0)}K` : `${k.toFixed(1)}K`;
+    }
+    return Math.round(num).toString();
+  }, []);
+
   // Monthly spending for line chart (last 6 months)
   const getMonthlySpending = () => {
     const result = [];
@@ -117,32 +122,54 @@ export default function AnalyticsScreen() {
     return result;
   };
 
-  // Daily spending for bar chart (current month)
-  const getDailySpending = () => {
+  // Last 7 days bar chart data
+  const getWeeklySpending = () => {
     const result = [];
-    const totalDays = now.getDate();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dayOfWeek = date.getDay();
+      const dayOfMonth = date.getDate();
+      const month = date.getMonth();
+      const year = date.getFullYear();
 
-    // Determine label interval based on number of days
-    const labelInterval = totalDays <= 10 ? 2 : totalDays <= 20 ? 5 : 7;
-
-    for (let day = 1; day <= totalDays; day++) {
-      const dayTotal = currentMonthExpenses
+      const dayTotal = spendingOnly
         .filter(e => {
           const expDate = new Date(e.expense_date);
-          return expDate.getDate() === day;
+          return expDate.getDate() === dayOfMonth &&
+                 expDate.getMonth() === month &&
+                 expDate.getFullYear() === year;
         })
         .reduce((sum, e) => sum + e.amount, 0);
 
-      // Show label at intervals, plus first and last day
-      const showLabel = day === 1 || day === totalDays || day % labelInterval === 0;
-      const isSelected = selectedDay?.day === day;
+      result.push({
+        value: dayTotal,
+        label: DAY_NAMES[dayOfWeek],
+        labelTextStyle: { color: '#B0B0B0', fontSize: 10, textAlign: 'center' as const },
+      });
+    }
+    return result;
+  };
 
+  // Current month daily line chart data
+  const getDailySpending = () => {
+    const result = [];
+    const totalDays = now.getDate();
+    // Adaptive label interval based on how many days we have
+    const labelInterval = totalDays <= 10 ? 1 : totalDays <= 20 ? 3 : 5;
+
+    for (let day = 1; day <= totalDays; day++) {
+      const dayTotal = currentMonthExpenses
+        .filter(e => new Date(e.expense_date).getDate() === day)
+        .reduce((sum, e) => sum + e.amount, 0);
+
+      const showLabel = totalDays <= 10
+        ? true
+        : day === 1 || day === totalDays || day % labelInterval === 0;
       result.push({
         value: dayTotal,
         label: showLabel ? String(day) : '',
-        frontColor: isSelected ? '#FF9500' : '#000',
-        labelTextStyle: { color: '#8E8E93', fontSize: 10, textAlign: 'center' },
-        onPress: () => setSelectedDay({ day, amount: dayTotal, index: day - 1 }),
+        labelTextStyle: { color: '#B0B0B0', fontSize: 10, textAlign: 'center' as const },
       });
     }
     return result;
@@ -154,16 +181,10 @@ export default function AnalyticsScreen() {
     .slice(0, 5);
 
   const lineData = getMonthlySpending();
+  const weekData = getWeeklySpending();
   const dailyData = getDailySpending();
 
-  // Find max daily spending for chart scaling
-  const maxDailySpend = Math.max(...dailyData.map(d => d.value), 1);
-
-  // Chart dimensions
-  const barWidth = 8;
-  const barSpacing = 6;
-  const initialSpacing = 15;
-  const yAxisWidth = 35;
+  const maxWeekSpend = Math.max(...weekData.map(d => d.value), 1);
 
   if (loading) {
     return (
@@ -231,126 +252,136 @@ export default function AnalyticsScreen() {
 
       {/* Spending Trend with Toggle */}
       <View style={styles.chartCard}>
-        <View style={styles.chartHeader}>
-          <Text style={styles.chartTitle}>Spending Trend</Text>
-          <View style={styles.viewToggle}>
+        <Text style={styles.chartTitle}>Spending Trend</Text>
+        <View style={styles.viewToggle}>
+          {(['week', 'daily', 'monthly'] as SpendingViewType[]).map((view) => (
             <TouchableOpacity
+              key={view}
               style={[
                 styles.toggleButton,
-                spendingView === 'monthly' && styles.toggleButtonActive,
+                spendingView === view && styles.toggleButtonActive,
               ]}
-              onPress={() => {
-                setSpendingView('monthly');
-                setSelectedDay(null);
-              }}
+              onPress={() => setSpendingView(view)}
             >
               <Text
                 style={[
                   styles.toggleButtonText,
-                  spendingView === 'monthly' && styles.toggleButtonTextActive,
+                  spendingView === view && styles.toggleButtonTextActive,
                 ]}
               >
-                Monthly
+                {view === 'week' ? '7 Days' : view === 'daily' ? 'Daily' : 'Monthly'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                spendingView === 'daily' && styles.toggleButtonActive,
-              ]}
-              onPress={() => setSpendingView('daily')}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  spendingView === 'daily' && styles.toggleButtonTextActive,
-                ]}
-              >
-                Daily
-              </Text>
-            </TouchableOpacity>
-          </View>
+          ))}
         </View>
 
-        {spendingView === 'monthly' ? (
-          // Monthly Line Chart
-          lineData.some(d => d.value > 0) ? (
-            <LineChart
-              data={lineData}
-              width={CHART_WIDTH - 20}
-              height={180}
-              spacing={40}
-              color="#000"
-              thickness={2}
-              startFillColor="rgba(0,0,0,0.1)"
-              endFillColor="rgba(0,0,0,0)"
-              startOpacity={0.3}
-              endOpacity={0}
-              areaChart
-              dataPointsColor="#000"
-              dataPointsRadius={5}
-              xAxisColor="#E0E0E0"
-              yAxisColor="#E0E0E0"
-              yAxisTextStyle={styles.axisLabel}
-              xAxisLabelTextStyle={styles.monthLabel}
-              hideRules
-              curved
-              initialSpacing={20}
-              endSpacing={20}
-            />
-          ) : (
-            <View style={styles.noDataContainer}>
-              <Text style={styles.noDataText}>No spending data available</Text>
-            </View>
-          )
-        ) : (
-          // Daily Bar Chart
-          dailyData.length > 0 ? (
-            <View>
+        {spendingView === 'week' ? (
+          // 7 Days Bar Chart
+          weekData.length > 0 ? (
+            <View style={{ backgroundColor: 'transparent' }}>
               <View style={styles.dailyChartHeader}>
-                <Text style={styles.chartSubtitle}>
-                  {MONTHS_SHORT[now.getMonth()]} {now.getFullYear()}
-                </Text>
-                {selectedDay && (
-                  <View style={styles.selectedDayInfo}>
-                    <Text style={styles.selectedDayDate}>
-                      {MONTHS_SHORT[now.getMonth()]} {selectedDay.day}
-                    </Text>
-                    <Text style={styles.selectedDayAmount}>
-                      {formatCurrency(selectedDay.amount)}
-                    </Text>
-                  </View>
-                )}
+                <Text style={styles.chartSubtitle}>Last 7 days</Text>
               </View>
-              <View>
+              <View style={{ backgroundColor: 'transparent' }}>
                 <BarChart
-                  data={dailyData}
-                  width={CHART_WIDTH - 20}
+                  data={weekData}
                   height={180}
-                  barWidth={barWidth}
-                  spacing={barSpacing}
+                  adjustToWidth
+                  parentWidth={CHART_WIDTH - 20}
                   xAxisColor="#E0E0E0"
                   yAxisColor="#E0E0E0"
                   yAxisTextStyle={styles.axisLabel}
-                  xAxisLabelTextStyle={styles.dayLabelCenter}
                   hideRules
                   noOfSections={4}
-                  maxValue={maxDailySpend * 1.2}
-                  initialSpacing={initialSpacing}
-                  endSpacing={15}
+                  maxValue={maxWeekSpend * 1.2}
                   barBorderRadius={3}
                   labelsExtraHeight={20}
-                  yAxisLabelWidth={yAxisWidth}
+                  yAxisLabelWidth={50}
                   autoShiftLabels
+                  formatYLabel={formatChartYLabel}
+                  yAxisLabelPrefix={currency.symbol}
+                  focusBarOnPress
+                  focusedBarConfig={{ color: '#FF9500' }}
+                  renderTooltip={(item: any) => (
+                    <View style={styles.tooltip}>
+                      <Text style={styles.tooltipText}>{formatCurrency(item.value)}</Text>
+                    </View>
+                  )}
                 />
               </View>
-              <Text style={styles.axisTitle}>Day of Month</Text>
             </View>
           ) : (
             <View style={styles.noDataContainer}>
-              <Text style={styles.noDataText}>No daily spending data</Text>
+              <Text style={styles.noDataText}>No spending data</Text>
             </View>
           )
+        ) : (
+          // Line Chart (Daily or Monthly)
+          (() => {
+            const chartData = spendingView === 'daily' ? dailyData : lineData;
+            const subtitle = spendingView === 'daily'
+              ? `${MONTHS_SHORT[now.getMonth()]} ${now.getFullYear()}`
+              : undefined;
+            const spacing = spendingView === 'daily'
+              ? Math.max(8, (CHART_WIDTH - 90) / Math.max(chartData.length - 1, 1))
+              : 40;
+
+            return chartData.some(d => d.value > 0) ? (
+              <View style={{ backgroundColor: 'transparent' }}>
+                {subtitle && (
+                  <View style={styles.dailyChartHeader}>
+                    <Text style={styles.chartSubtitle}>{subtitle}</Text>
+                  </View>
+                )}
+                <LineChart
+                  data={chartData}
+                  width={CHART_WIDTH - 20}
+                  height={180}
+                  spacing={spacing}
+                  color="#000"
+                  thickness={2}
+                  startFillColor="rgba(0,0,0,0.1)"
+                  endFillColor="rgba(0,0,0,0)"
+                  startOpacity={0.2}
+                  endOpacity={0}
+                  areaChart
+                  dataPointsColor="#000"
+                  dataPointsRadius={spendingView === 'daily' ? 3 : 4}
+                  xAxisColor="#E0E0E0"
+                  yAxisColor="transparent"
+                  yAxisTextStyle={styles.axisLabel}
+                  xAxisLabelTextStyle={styles.monthLabel}
+                  hideRules={false}
+                  rulesType="dashed"
+                  rulesColor="#F0F0F0"
+                  curved={false}
+                  initialSpacing={20}
+                  endSpacing={20}
+                  formatYLabel={formatChartYLabel}
+                  yAxisLabelPrefix={currency.symbol}
+                  yAxisLabelWidth={50}
+                  noOfSections={4}
+                  pointerConfig={{
+                    pointerStripColor: 'rgba(0,0,0,0.1)',
+                    pointerStripWidth: 1,
+                    pointerColor: '#000',
+                    radius: 5,
+                    pointerLabelWidth: 120,
+                    pointerLabelHeight: 30,
+                    pointerLabelComponent: (items: any) => (
+                      <View style={styles.tooltip}>
+                        <Text style={styles.tooltipText}>{formatCurrency(items[0].value)}</Text>
+                      </View>
+                    ),
+                  }}
+                />
+              </View>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>No spending data available</Text>
+              </View>
+            );
+          })()
         )}
       </View>
 
@@ -369,7 +400,7 @@ export default function AnalyticsScreen() {
                 centerLabelComponent={() => (
                   <View style={styles.pieCenter}>
                     <Text style={styles.pieCenterAmount} numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(totalSpentThisMonth)}</Text>
-                    <Text style={styles.pieCenterLabel}>Total</Text>
+                    <Text style={styles.pieCenterLabel}>{MONTHS_SHORT[now.getMonth()]}</Text>
                   </View>
                 )}
               />
@@ -463,6 +494,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 16,
+    backgroundColor: 'transparent',
   },
   summaryCard: {
     flex: 1,
@@ -536,7 +568,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     overflow: 'hidden',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: 'transparent',
   },
   incomeBar: {
     backgroundColor: '#34C759',
@@ -555,17 +587,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: 'hidden',
   },
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    backgroundColor: 'transparent',
-  },
   chartTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#000',
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 17,
@@ -584,88 +610,64 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: 'transparent',
   },
-  selectedDayInfo: {
-    backgroundColor: '#000',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  selectedDayDate: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.7)',
-  },
-  selectedDayAmount: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  chartHint: {
-    fontSize: 11,
-    color: '#C7C7CC',
-    textAlign: 'center',
-    marginTop: 8,
-  },
   viewToggle: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
+    alignSelf: 'center',
+    backgroundColor: '#F2F2F7',
     borderRadius: 8,
     padding: 2,
+    marginBottom: 14,
   },
   toggleButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
     borderRadius: 6,
+    backgroundColor: 'transparent',
   },
   toggleButtonActive: {
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   toggleButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: '#8E8E93',
   },
   toggleButtonTextActive: {
+    color: '#000',
+  },
+
+  // Tooltip
+  tooltip: {
+    backgroundColor: '#000',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignItems: 'center',
+  },
+  tooltipText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: '#fff',
   },
+
   axisLabel: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: '#B0B0B0',
   },
   monthLabel: {
     fontSize: 11,
-    color: '#8E8E93',
-  },
-  dayLabel: {
-    fontSize: 9,
-    color: '#8E8E93',
-  },
-  dayLabelCenter: {
-    fontSize: 10,
-    color: '#8E8E93',
-    textAlign: 'center',
-  },
-  axisTitle: {
-    fontSize: 10,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  yAxisTitle: {
-    fontSize: 10,
-    color: '#8E8E93',
-    position: 'absolute',
-    left: -5,
-    top: 80,
-    transform: [{ rotate: '-90deg' }],
+    color: '#B0B0B0',
   },
   noDataContainer: {
     height: 160,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   noDataText: {
     fontSize: 14,
@@ -676,12 +678,15 @@ const styles = StyleSheet.create({
   pieContainer: {
     flexDirection: 'column',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   pieChartWrapper: {
     marginBottom: 20,
+    backgroundColor: 'transparent',
   },
   pieCenter: {
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   pieCenterAmount: {
     fontSize: 18,
@@ -694,6 +699,7 @@ const styles = StyleSheet.create({
   },
   legendContainer: {
     width: '100%',
+    backgroundColor: 'transparent',
   },
   legendItem: {
     flexDirection: 'row',
@@ -723,6 +729,7 @@ const styles = StyleSheet.create({
   // Top Categories
   topCategoriesList: {
     gap: 12,
+    backgroundColor: 'transparent',
   },
   topCategoryItem: {
     flexDirection: 'row',
@@ -779,5 +786,6 @@ const styles = StyleSheet.create({
 
   bottomPadding: {
     height: 40,
+    backgroundColor: 'transparent',
   },
 });

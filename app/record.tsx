@@ -13,6 +13,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Text, View } from '@/components/Themed';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import ExpenseReview from '@/components/ExpenseReview';
+import AIConsentModal from '@/components/AIConsentModal';
 import { parseVoiceExpenses, saveMultipleExpenses } from '@/lib/api';
 import { getVoiceLanguage, hasGrantedAIConsent, setAIConsentGranted } from '@/lib/storage';
 import { ParsedExpense } from '@/types';
@@ -33,6 +34,7 @@ export default function RecordScreen() {
   const [screen, setScreen] = useState<Screen>('record');
   const [isReady, setIsReady] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
   const [parsedExpenses, setParsedExpenses] = useState<ParsedExpense[]>([]);
   const [transcript, setTranscript] = useState('');
 
@@ -59,29 +61,22 @@ export default function RecordScreen() {
         setConsentChecked(true);
         return;
       }
-
-      Alert.alert(
-        'Voice Processing',
-        'To convert your voice into expenses, your audio recording is sent to OpenAI for transcription and processing. No audio is stored — only the resulting text is saved. See our Privacy Policy for details.',
-        [
-          {
-            text: "Don't Allow",
-            style: 'cancel',
-            onPress: () => navigateToHome(),
-          },
-          {
-            text: 'Allow',
-            onPress: async () => {
-              await setAIConsentGranted();
-              setConsentChecked(true);
-            },
-          },
-        ],
-      );
+      setShowConsentModal(true);
     };
 
     checkConsent();
   }, [isReady]);
+
+  const handleConsentAllow = async () => {
+    await setAIConsentGranted();
+    setShowConsentModal(false);
+    setConsentChecked(true);
+  };
+
+  const handleConsentDeny = () => {
+    setShowConsentModal(false);
+    navigateToHome();
+  };
 
   // Navigate to home screen, dismissing any modals in the stack
   const navigateToHome = (shouldRefresh = false) => {
@@ -163,7 +158,12 @@ export default function RecordScreen() {
   if (authLoading || !isReady || !consentChecked) {
     return (
       <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#000" />
+        {!showConsentModal && <ActivityIndicator size="large" color="#000" />}
+        <AIConsentModal
+          visible={showConsentModal}
+          onAllow={handleConsentAllow}
+          onDeny={handleConsentDeny}
+        />
       </View>
     );
   }

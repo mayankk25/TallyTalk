@@ -165,6 +165,17 @@ export async function setAIConsentGranted(): Promise<void> {
 }
 
 /**
+ * Revoke AI data-sharing consent
+ */
+export async function revokeAIConsent(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(AI_CONSENT_KEY);
+  } catch (error) {
+    console.error('Error revoking AI consent:', error);
+  }
+}
+
+/**
  * Format amount with the given currency
  * For whole numbers (e.g., 80.00), no decimals are shown (e.g., "$80")
  * For fractional amounts (e.g., 15.50), decimals are shown (e.g., "$15.50")

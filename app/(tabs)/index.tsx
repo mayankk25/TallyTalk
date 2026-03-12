@@ -17,6 +17,7 @@ import EditExpenseModal from '@/components/EditExpenseModal';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import ExpenseReview from '@/components/ExpenseReview';
 import OnboardingModal from '@/components/OnboardingModal';
+import AIConsentModal from '@/components/AIConsentModal';
 import { hasCompletedOnboarding, setOnboardingComplete, getVoiceLanguage, hasGrantedAIConsent, setAIConsentGranted } from '@/lib/storage';
 import {
   getExpenses,
@@ -62,30 +63,26 @@ export default function HomeScreen() {
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // AI consent modal state
+  const [showConsentModal, setShowConsentModal] = useState(false);
+
   const openVoiceRecorderWithConsent = useCallback(async () => {
     const consented = await hasGrantedAIConsent();
     if (consented) {
       setShowVoiceModal(true);
       return;
     }
+    setShowConsentModal(true);
+  }, []);
 
-    Alert.alert(
-      'Voice Processing',
-      'To convert your voice into expenses, your audio recording is sent to OpenAI for transcription and processing. No audio is stored — only the resulting text is saved. See our Privacy Policy for details.',
-      [
-        {
-          text: "Don't Allow",
-          style: 'cancel',
-        },
-        {
-          text: 'Allow',
-          onPress: async () => {
-            await setAIConsentGranted();
-            setShowVoiceModal(true);
-          },
-        },
-      ],
-    );
+  const handleConsentAllow = useCallback(async () => {
+    await setAIConsentGranted();
+    setShowConsentModal(false);
+    setShowVoiceModal(true);
+  }, []);
+
+  const handleConsentDeny = useCallback(() => {
+    setShowConsentModal(false);
   }, []);
 
   // Animations
@@ -275,21 +272,8 @@ export default function HomeScreen() {
       }));
 
       await saveMultipleExpenses(expensesToSave);
-      const incomeCount = expenses.filter(e => e.type === 'income').length;
-      const expenseCount = expenses.filter(e => e.type !== 'income').length;
-      let message = '';
-      if (incomeCount > 0 && expenseCount > 0) {
-        message = `${incomeCount} income and ${expenseCount} expense${expenseCount !== 1 ? 's' : ''} added`;
-      } else if (incomeCount > 0) {
-        message = `${incomeCount} income${incomeCount !== 1 ? 's' : ''} added`;
-      } else {
-        message = `${expenseCount} expense${expenseCount !== 1 ? 's' : ''} added`;
-      }
       resetVoiceModal();
       loadData();
-      setTimeout(() => {
-        Alert.alert('Saved', message);
-      }, 300);
     } catch (error: any) {
       console.error('Failed to save:', error);
       resetVoiceModal();
@@ -547,6 +531,13 @@ export default function HomeScreen() {
       <OnboardingModal
         visible={showOnboarding}
         onComplete={handleOnboardingComplete}
+      />
+
+      {/* AI Consent Modal */}
+      <AIConsentModal
+        visible={showConsentModal}
+        onAllow={handleConsentAllow}
+        onDeny={handleConsentDeny}
       />
     </View>
   );

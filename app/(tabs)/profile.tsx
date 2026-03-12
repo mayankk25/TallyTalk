@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, TouchableOpacity, Alert, ScrollView, ActionSheetIOS, Platform, Modal, Linking } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Text, View } from '@/components/Themed';
 import { useAuthContext } from '@/lib/AuthContext';
@@ -13,6 +14,8 @@ import {
   CURRENCIES,
   CurrencyCode,
   getCurrencyByCode,
+  hasGrantedAIConsent,
+  revokeAIConsent,
 } from '@/lib/storage';
 
 export default function SettingsScreen() {
@@ -22,11 +25,19 @@ export default function SettingsScreen() {
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const [currencyCode, setCurrencyCodeState] = useState<CurrencyCode>('USD');
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+  const [aiConsentGranted, setAiConsentGranted] = useState(false);
 
   useEffect(() => {
     loadVoiceLanguage();
     loadCurrency();
   }, []);
+
+  // Reload AI consent status every time the tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      loadAIConsentStatus();
+    }, [])
+  );
 
   const loadVoiceLanguage = async () => {
     const lang = await getVoiceLanguage();
@@ -36,6 +47,35 @@ export default function SettingsScreen() {
   const loadCurrency = async () => {
     const currency = await getCurrency();
     setCurrencyCodeState(currency);
+  };
+
+  const loadAIConsentStatus = async () => {
+    const granted = await hasGrantedAIConsent();
+    setAiConsentGranted(granted);
+  };
+
+  const handleRevokeAIConsent = () => {
+    Alert.alert(
+      'Revoke AI Consent',
+      'This will revoke your permission for voice data to be sent to OpenAI. You\'ll be asked for consent again next time you use voice recording.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Revoke',
+          style: 'destructive',
+          onPress: async () => {
+            await revokeAIConsent();
+            setAiConsentGranted(false);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleAIConsentPress = () => {
+    if (aiConsentGranted) {
+      handleRevokeAIConsent();
+    }
   };
 
   const handleLanguageSelect = async (code: VoiceLanguage) => {
@@ -198,6 +238,22 @@ export default function SettingsScreen() {
           />
           {/* Appearance removed - not yet implemented */}
         </View>
+      </View>
+
+      {/* Privacy & Data Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Privacy & Data</Text>
+        <View style={styles.menuCard}>
+          <MenuItem
+            icon="shield"
+            label="AI Voice Processing"
+            value={aiConsentGranted ? 'Allowed' : 'Not Allowed'}
+            onPress={aiConsentGranted ? handleAIConsentPress : undefined}
+          />
+        </View>
+        <Text style={styles.privacyFooter}>
+          Voice recordings are sent to OpenAI for transcription and expense parsing. You can revoke consent at any time.
+        </Text>
       </View>
 
       {/* About Section */}
@@ -442,6 +498,14 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F0F0F0',
     marginLeft: 56,
+  },
+
+  privacyFooter: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 8,
+    marginLeft: 4,
+    lineHeight: 18,
   },
 
   // Menu Items

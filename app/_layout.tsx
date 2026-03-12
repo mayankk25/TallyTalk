@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,7 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // Suppress known react-native-svg warning that doesn't affect functionality
 LogBox.ignoreLogs(['Unsupported top level event type "topSvgLayout" dispatched']);
 
-import { useColorScheme } from '@/components/useColorScheme';
+
 import { AuthProvider, useAuthContext } from '@/lib/AuthContext';
 
 export { ErrorBoundary } from 'expo-router';
@@ -48,7 +48,6 @@ const DeepLinkContext = createContext<DeepLinkContextType>({
 export const useDeepLink = () => useContext(DeepLinkContext);
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
   const { user, loading } = useAuthContext();
   const { initialDeepLink, clearInitialDeepLink } = useDeepLink();
   const segments = useSegments();
@@ -86,7 +85,7 @@ function RootLayoutNav() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />

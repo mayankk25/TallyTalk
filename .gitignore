@@ -41,3 +41,6 @@ yarn-error.*
 /ios
 /android
 .vercel
+
+# Large media files
+assets_home/Actual Recording.mov
